@@ -9,8 +9,15 @@ namespace SmartTyping.Infrastructure.Input;
 internal static class NativeMethods
 {
     public const int WH_KEYBOARD_LL = 13;
+    public const int WH_MOUSE_LL = 14;
     public const int WM_KEYDOWN = 0x0100;
     public const int WM_SYSKEYDOWN = 0x0104;
+
+    // Mouse button-down messages — used to invalidate the as-you-type word buffer when the user
+    // clicks (which moves the caret without any keystroke passing through the keyboard hook).
+    public const int WM_LBUTTONDOWN = 0x0201;
+    public const int WM_RBUTTONDOWN = 0x0204;
+    public const int WM_MBUTTONDOWN = 0x0207;
 
     // Virtual-key codes
     public const int VK_CONTROL = 0x11;
@@ -38,6 +45,9 @@ internal static class NativeMethods
     public const int VK_OEM_7 = 0xDE;      // '
     public const int VK_OEM_COMMA = 0xBC;  // ,
     public const int VK_OEM_PERIOD = 0xBE; // .
+    public const int VK_OEM_PLUS = 0xBB;   // =
+    public const int VK_OEM_MINUS = 0xBD;  // -
+    public const int VK_OEM_3 = 0xC0;      // `
 
     public const int LANG_THAI = 0x1E;
 

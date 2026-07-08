@@ -23,22 +23,27 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     private readonly ILogger<WindowsKeyboardHook> _logger;
     private readonly IKeyboardLayoutConverter _converter;
 
-    // Keep the delegate alive for the lifetime of the hook (prevents GC of the callback).
+    // Keep the delegates alive for the lifetime of the hooks (prevents GC of the callbacks).
     private readonly NativeMethods.LowLevelKeyboardProc _proc;
+    private readonly NativeMethods.LowLevelKeyboardProc _mouseProc;
     private IntPtr _hookHandle = IntPtr.Zero;
+    private IntPtr _mouseHookHandle = IntPtr.Zero;
 
     // Current action→hotkey bindings (defaults until UpdateBindings is called). Volatile swap.
     private IReadOnlyDictionary<HotkeyAction, Hotkey> _bindings = SettingsService.DefaultHotkeys;
 
-    // As-you-type suggestion state (accessed only on the hook/UI thread).
+    // As-you-type suggestion state (accessed only on the hook/UI thread — both low-level hooks are
+    // called on the thread that installed them, so no locking is needed).
     private readonly StringBuilder _wordBuffer = new(48);
     private string _lastSuggestedWord = string.Empty;
+    private IntPtr _lastForeground = IntPtr.Zero;
 
     public WindowsKeyboardHook(ILogger<WindowsKeyboardHook> logger, IKeyboardLayoutConverter converter)
     {
         _logger = logger;
         _converter = converter;
         _proc = HookCallback;
+        _mouseProc = MouseCallback;
     }
 
     public event EventHandler? ConversionHotkeyPressed;
@@ -79,17 +84,52 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         {
             _logger.LogWarning("Failed to install the low-level keyboard hook. The conversion hotkey will be unavailable.");
         }
+
+        // A mouse hook lets us drop the as-you-type word buffer when the user clicks elsewhere, so an
+        // automatic replacement can never fire against text at a caret position we didn't track.
+        _mouseHookHandle = NativeMethods.SetWindowsHookEx(NativeMethods.WH_MOUSE_LL, _mouseProc, moduleHandle, 0);
+        if (_mouseHookHandle == IntPtr.Zero)
+        {
+            _logger.LogWarning("Failed to install the low-level mouse hook; as-you-type buffer won't reset on click.");
+        }
     }
 
     public void Stop()
     {
-        if (_hookHandle == IntPtr.Zero)
+        if (_hookHandle != IntPtr.Zero)
         {
-            return;
+            NativeMethods.UnhookWindowsHookEx(_hookHandle);
+            _hookHandle = IntPtr.Zero;
         }
 
-        NativeMethods.UnhookWindowsHookEx(_hookHandle);
-        _hookHandle = IntPtr.Zero;
+        if (_mouseHookHandle != IntPtr.Zero)
+        {
+            NativeMethods.UnhookWindowsHookEx(_mouseHookHandle);
+            _mouseHookHandle = IntPtr.Zero;
+        }
+    }
+
+    // Any mouse click can move the caret without a keystroke — invalidate the tracked word so we
+    // never backspace/replace at the wrong location.
+    private IntPtr MouseCallback(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        try
+        {
+            if (nCode >= 0 && _wordBuffer.Length > 0)
+            {
+                var msg = (int)wParam;
+                if (msg is NativeMethods.WM_LBUTTONDOWN or NativeMethods.WM_RBUTTONDOWN or NativeMethods.WM_MBUTTONDOWN)
+                {
+                    _wordBuffer.Clear();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Mouse hook callback failed.");
+        }
+
+        return NativeMethods.CallNextHookEx(_mouseHookHandle, nCode, wParam, lParam);
     }
 
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
@@ -118,7 +158,17 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                 if ((SuggestionsEnabled || AutoExpandEnabled) && !matched &&
                     (mods & (HotkeyModifiers.Ctrl | HotkeyModifiers.Alt | HotkeyModifiers.Win)) == 0)
                 {
-                    UpdateWordBuffer(vk);
+                    // If focus moved to another window (e.g. Alt+Tab), the tracked word is stale and a
+                    // word suggested in the previous app can be offered again here.
+                    var foreground = NativeMethods.GetForegroundWindow();
+                    if (foreground != _lastForeground)
+                    {
+                        _wordBuffer.Clear();
+                        _lastSuggestedWord = string.Empty;
+                        _lastForeground = foreground;
+                    }
+
+                    UpdateWordBuffer(vk, (mods & HotkeyModifiers.Shift) != 0);
                 }
             }
         }
@@ -139,7 +189,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
     }
 
-    private void UpdateWordBuffer(int vk)
+    private void UpdateWordBuffer(int vk, bool shift)
     {
         switch (vk)
         {
@@ -159,7 +209,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                 return;
         }
 
-        var c = VkToChar(vk);
+        var c = VkToChar(vk, shift);
         if (c == '\0')
         {
             _wordBuffer.Clear(); // navigation / other keys break the current word
@@ -234,21 +284,47 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
     }
 
-    // Maps a virtual-key to the character it produces on a US-QWERTY layout (physical key), or '\0'.
-    private static char VkToChar(int vk) => vk switch
+    // Maps a virtual-key to the character it produces on a US-QWERTY layout (physical key), honouring
+    // the Shift state so the buffer matches what was actually typed (triggers and layout conversion
+    // both depend on the correct case/symbol). Returns '\0' for keys that break the current word.
+    private static char VkToChar(int vk, bool shift)
     {
-        >= 0x41 and <= 0x5A => (char)(vk + 32), // A-Z -> a-z
-        >= 0x30 and <= 0x39 => (char)vk,        // 0-9
-        NativeMethods.VK_OEM_1 => ';',
-        NativeMethods.VK_OEM_2 => '/',
-        NativeMethods.VK_OEM_4 => '[',
-        NativeMethods.VK_OEM_5 => '\\',
-        NativeMethods.VK_OEM_6 => ']',
-        NativeMethods.VK_OEM_7 => '\'',
-        NativeMethods.VK_OEM_COMMA => ',',
-        NativeMethods.VK_OEM_PERIOD => '.',
-        _ => '\0'
-    };
+        if (vk is >= 0x41 and <= 0x5A) // letters
+        {
+            return (char)(shift ? vk : vk + 32);
+        }
+
+        if (vk is >= 0x30 and <= 0x39) // digit row
+        {
+            if (!shift)
+            {
+                return (char)vk;
+            }
+
+            return vk switch
+            {
+                0x31 => '!', 0x32 => '@', 0x33 => '#', 0x34 => '$', 0x35 => '%',
+                0x36 => '^', 0x37 => '&', 0x38 => '*', 0x39 => '(', 0x30 => ')',
+                _ => '\0'
+            };
+        }
+
+        return vk switch
+        {
+            NativeMethods.VK_OEM_1 => shift ? ':' : ';',
+            NativeMethods.VK_OEM_2 => shift ? '?' : '/',
+            NativeMethods.VK_OEM_3 => shift ? '~' : '`',
+            NativeMethods.VK_OEM_4 => shift ? '{' : '[',
+            NativeMethods.VK_OEM_5 => shift ? '|' : '\\',
+            NativeMethods.VK_OEM_6 => shift ? '}' : ']',
+            NativeMethods.VK_OEM_7 => shift ? '"' : '\'',
+            NativeMethods.VK_OEM_PLUS => shift ? '+' : '=',
+            NativeMethods.VK_OEM_MINUS => shift ? '_' : '-',
+            NativeMethods.VK_OEM_COMMA => shift ? '<' : ',',
+            NativeMethods.VK_OEM_PERIOD => shift ? '>' : '.',
+            _ => '\0'
+        };
+    }
 
     private EventHandler? EventFor(HotkeyAction action) => action switch
     {

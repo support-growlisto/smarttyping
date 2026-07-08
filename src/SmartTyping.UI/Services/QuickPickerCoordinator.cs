@@ -89,6 +89,11 @@ public sealed class QuickPickerCoordinator : IDisposable
             if (result.Matched && result.ExpandedText is not null &&
                 await _injector.InjectAsync(result.ExpandedText, replaceSelection: false, result.CursorOffset))
             {
+                if (result.SnippetId is int id)
+                {
+                    await _expansion.RegisterUsageAsync(id);
+                }
+
                 Inserted?.Invoke(this, result.ExpandedText);
             }
         }

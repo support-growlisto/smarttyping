@@ -34,6 +34,9 @@ public partial class App : System.Windows.Application
     // Throttle the as-you-type suggestion balloon so it can't spam the tray.
     private int _lastSuggestionTick;
 
+    // Guards the automatic layout-correct handler against overlapping in-flight corrections.
+    private int _autoCorrectBusy;
+
     /// <summary>True once the user has chosen to exit, so the main window stops hiding-to-tray.</summary>
     public static bool IsShuttingDown { get; private set; }
 
@@ -288,6 +291,12 @@ public partial class App : System.Windows.Application
 
     private async void OnLayoutAutoCorrectRequested(object? sender, Application.Language.LayoutSuggestion suggestion)
     {
+        // Drop overlapping requests so two in-flight corrections can't interleave their input.
+        if (Interlocked.Exchange(ref _autoCorrectBusy, 1) == 1)
+        {
+            return;
+        }
+
         try
         {
             // Delete the wrong-layout word plus the space that closed it, and type the fix + a space.
@@ -303,6 +312,10 @@ public partial class App : System.Windows.Application
         catch (Exception ex)
         {
             _logger?.LogWarning(ex, "Automatic layout correction failed.");
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _autoCorrectBusy, 0);
         }
     }
 

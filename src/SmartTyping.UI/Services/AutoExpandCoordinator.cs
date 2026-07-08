@@ -68,6 +68,11 @@ public sealed class AutoExpandCoordinator : IDisposable
             var replacement = result.ExpandedText + e.Boundary;
             if (await _replacer.ReplaceAsync(e.Word.Length + e.Boundary.Length, replacement, result.CursorOffset))
             {
+                if (result.SnippetId is int id)
+                {
+                    await _expansion.RegisterUsageAsync(id);
+                }
+
                 Expanded?.Invoke(this, result.ExpandedText);
             }
         }

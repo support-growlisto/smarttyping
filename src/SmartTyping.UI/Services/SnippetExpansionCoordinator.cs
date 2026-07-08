@@ -83,6 +83,11 @@ public sealed class SnippetExpansionCoordinator : IDisposable
 
             if (await _injector.InjectAsync(result.ExpandedText, replaceSelection: true, result.CursorOffset))
             {
+                if (result.SnippetId is int id)
+                {
+                    await _expansion.RegisterUsageAsync(id);
+                }
+
                 Expanded?.Invoke(this, result.ExpandedText);
             }
         }

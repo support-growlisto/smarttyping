@@ -47,8 +47,11 @@ public sealed class SnippetExpansionService
             return ExpansionResult.Miss();
         }
 
-        await _snippets.RegisterUsageAsync(snippet.Id, _clock.UtcNow);
-
+        // Usage is recorded by the caller via RegisterUsageAsync only after the text is actually
+        // injected, so a failed paste (secure field, clipboard timeout) doesn't inflate the stats.
         return ExpansionResult.Hit(snippet.Id, rendered.Text, rendered.CursorOffset);
     }
+
+    /// <summary>Records one successful use of a snippet. Call after the expansion is injected.</summary>
+    public Task RegisterUsageAsync(int snippetId) => _snippets.RegisterUsageAsync(snippetId, _clock.UtcNow);
 }

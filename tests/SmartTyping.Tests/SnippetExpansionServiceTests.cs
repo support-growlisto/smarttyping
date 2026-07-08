@@ -77,12 +77,19 @@ public sealed class SnippetExpansionServiceTests
     }
 
     [Fact] // SE-5
-    public async Task TryExpand_SuccessfulExpansion_RecordsUsage()
+    public async Task TryExpand_DoesNotRecordUsage_UntilCallerConfirms()
     {
+        // Usage is recorded by the caller (after a successful inject), not by TryExpandAsync, so a
+        // failed paste can't inflate the stats.
         var (service, repo) = CreateService();
         var snippet = repo.Seed("/sig", "signature");
 
-        await service.TryExpandAsync("/sig");
+        var result = await service.TryExpandAsync("/sig");
+
+        Assert.True(result.Matched);
+        Assert.Equal(0, repo.RegisterUsageCallCount);
+
+        await service.RegisterUsageAsync(result.SnippetId!.Value);
 
         Assert.Equal(1, repo.RegisterUsageCallCount);
         Assert.Equal(1, snippet.UsageCount);
