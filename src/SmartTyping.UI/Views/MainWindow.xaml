@@ -58,15 +58,14 @@
         <DockPanel Grid.Row="0" Grid.Column="1">
             <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                    <Button Command="{Binding AddCommand}" Padding="10,4" Margin="4,0,0,0"
+                    <Button Command="{Binding AddCommand}" Margin="6,0,0,0" Style="{StaticResource AccentButton}"
                             Content="{Binding [Main_Add], Source={x:Static loc:LocalizationManager.Instance}}" />
-                    <Button Command="{Binding EditCommand}" Padding="10,4" Margin="4,0,0,0"
+                    <Button Command="{Binding EditCommand}" Margin="6,0,0,0"
                             Content="{Binding [Main_Edit], Source={x:Static loc:LocalizationManager.Instance}}" />
-                    <Button Command="{Binding DeleteCommand}" Padding="10,4" Margin="4,0,0,0"
+                    <Button Command="{Binding DeleteCommand}" Margin="6,0,0,0"
                             Content="{Binding [Main_Delete], Source={x:Static loc:LocalizationManager.Instance}}" />
                 </StackPanel>
                 <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         VerticalContentAlignment="Center" Padding="6,3"
                          ToolTip="{Binding [Main_SearchTooltip], Source={x:Static loc:LocalizationManager.Instance}}" />
             </DockPanel>
 
@@ -75,7 +74,7 @@
                           SelectedItem="{Binding SelectedSnippet, Mode=TwoWay}"
                           AutoGenerateColumns="False" CanUserAddRows="False"
                           IsReadOnly="False" HeadersVisibility="Column"
-                          GridLinesVisibility="Horizontal" SelectionMode="Single">
+                          SelectionMode="Single">
                     <DataGrid.Columns>
                         <DataGridCheckBoxColumn Binding="{Binding IsEnabled, UpdateSourceTrigger=PropertyChanged}" Width="40"
                                                 Header="{Binding [Main_Col_On], Source={x:Static loc:LocalizationManager.Instance}}" />

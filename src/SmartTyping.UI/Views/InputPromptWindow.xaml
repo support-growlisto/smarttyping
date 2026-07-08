@@ -11,7 +11,7 @@
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
             <Button Width="88" Margin="0,0,8,0" IsCancel="True" Click="OnCancel"
                     Content="{Binding [Edit_Cancel], Source={x:Static loc:LocalizationManager.Instance}}" />
-            <Button Width="88" IsDefault="True" Click="OnOk"
+            <Button Width="88" IsDefault="True" Click="OnOk" Style="{StaticResource AccentButton}"
                     Content="{Binding [Prompt_Ok], Source={x:Static loc:LocalizationManager.Instance}}" />
         </StackPanel>
     </StackPanel>

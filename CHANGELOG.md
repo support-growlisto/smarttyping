@@ -57,6 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Convert the last typed word without selecting** (PRD FR-7): if you press Ctrl+Shift+L with no selection, SmartTyping auto-selects the previous word (Ctrl+Shift+Left) and converts it in place.
 - **Quick-picker** (Ctrl+Shift+Space): a floating, searchable list of your snippets. Type to fuzzy-filter (trigger-prefix ranks first, then trigger-, then content-matches; ties break by usage), ↑↓ to navigate, Enter to insert at the caret, Esc to dismiss. Focus returns to the app you were typing in, and it won't insert into a detected password field. Ranking lives in `SnippetSearch` (Application) and is unit-tested.
 
+### UI polish
+- A refreshed visual design: refined light/dark palettes, an **accent primary button** for the main actions (Add / Save / Insert), rounded text boxes with an accent focus ring, accent-filled check boxes, softer rounded list selection, and a cleaner grid (no gridlines, roomier rows, subtle headers). All themed, so it looks consistent in light and dark.
+
 ### Localization
 - **Thai / English UI** with **Thai as the default**. Switch language live from Settings (no restart); the choice is remembered. A lightweight `LocalizationManager` drives all window text, the tray menu, and status/dialog messages via an indexer binding. Only UI strings are localized — date/number formatting still follows the system culture.
 

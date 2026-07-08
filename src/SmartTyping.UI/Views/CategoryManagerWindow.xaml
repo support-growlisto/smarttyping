@@ -19,7 +19,7 @@
                  SelectedItem="{Binding Selected, Mode=TwoWay}" DisplayMemberPath="Name" Margin="0,0,10,0" />
 
         <StackPanel Grid.Row="0" Grid.Column="1" Width="96">
-            <Button Command="{Binding AddCommand}" Padding="0,5" Margin="0,0,0,6"
+            <Button Command="{Binding AddCommand}" Padding="0,5" Margin="0,0,0,6" Style="{StaticResource AccentButton}"
                     Content="{Binding [Cat_Add], Source={x:Static loc:LocalizationManager.Instance}}" />
             <Button Command="{Binding RenameCommand}" Padding="0,5" Margin="0,0,0,6"
                     Content="{Binding [Cat_Rename], Source={x:Static loc:LocalizationManager.Instance}}" />

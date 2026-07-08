@@ -42,8 +42,8 @@
                        Text="{Binding [Onb_Tray], Source={x:Static loc:LocalizationManager.Instance}}" />
         </StackPanel>
 
-        <Button Grid.Row="3" HorizontalAlignment="Right" Width="120" Padding="0,6"
-                Margin="0,16,0,0" IsDefault="True" Click="OnGotItClick"
+        <Button Grid.Row="3" HorizontalAlignment="Right" Width="120" Padding="0,7"
+                Margin="0,16,0,0" IsDefault="True" Click="OnGotItClick" Style="{StaticResource AccentButton}"
                 Content="{Binding [Onb_GotIt], Source={x:Static loc:LocalizationManager.Instance}}" />
     </Grid>
 </Window>

@@ -2,17 +2,18 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- Light theme palette. Keys are shared with Theme.Dark.xaml; only the values differ. -->
     <SolidColorBrush x:Key="Brush.Window"           Color="#FFFFFFFF" />
-    <SolidColorBrush x:Key="Brush.Surface"          Color="#FFF4F4F8" />
-    <SolidColorBrush x:Key="Brush.SurfaceAlt"       Color="#FFF1F0FB" />
-    <SolidColorBrush x:Key="Brush.Foreground"       Color="#FF1E1E1E" />
-    <SolidColorBrush x:Key="Brush.SubtleForeground" Color="#FF666666" />
-    <SolidColorBrush x:Key="Brush.FaintForeground"  Color="#FF999999" />
-    <SolidColorBrush x:Key="Brush.Control"          Color="#FFF7F7F9" />
-    <SolidColorBrush x:Key="Brush.ControlHover"     Color="#FFEAEAF0" />
-    <SolidColorBrush x:Key="Brush.ControlBorder"    Color="#FFCCCCCC" />
-    <SolidColorBrush x:Key="Brush.Border"           Color="#FFDDDDDD" />
-    <SolidColorBrush x:Key="Brush.Selection"        Color="#FFD8E2FF" />
-    <SolidColorBrush x:Key="Brush.Accent"           Color="#FF635BFF" />
+    <SolidColorBrush x:Key="Brush.Surface"          Color="#FFF5F6FA" />
+    <SolidColorBrush x:Key="Brush.SurfaceAlt"       Color="#FFEEEFFA" />
+    <SolidColorBrush x:Key="Brush.Foreground"       Color="#FF23262F" />
+    <SolidColorBrush x:Key="Brush.SubtleForeground" Color="#FF6B7280" />
+    <SolidColorBrush x:Key="Brush.FaintForeground"  Color="#FF9AA0AA" />
+    <SolidColorBrush x:Key="Brush.Control"          Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="Brush.ControlHover"     Color="#FFF0F1F6" />
+    <SolidColorBrush x:Key="Brush.ControlBorder"    Color="#FFDBDEE6" />
+    <SolidColorBrush x:Key="Brush.Border"           Color="#FFE6E8EE" />
+    <SolidColorBrush x:Key="Brush.Selection"        Color="#FFE7E5FF" />
+    <SolidColorBrush x:Key="Brush.Accent"           Color="#FF5B5BF0" />
+    <SolidColorBrush x:Key="Brush.AccentHover"      Color="#FF4A4AE4" />
     <SolidColorBrush x:Key="Brush.AccentForeground" Color="#FFFFFFFF" />
-    <SolidColorBrush x:Key="Brush.Error"            Color="#FFC0392B" />
+    <SolidColorBrush x:Key="Brush.Error"            Color="#FFD64541" />
 </ResourceDictionary>
