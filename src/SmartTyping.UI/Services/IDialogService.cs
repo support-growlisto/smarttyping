@@ -26,4 +26,13 @@ public interface IDialogService
 
     /// <summary>Shows a simple information message.</summary>
     void ShowMessage(string message, string title);
+
+    /// <summary>Shows a single-line text prompt. Returns the entered value, or null if cancelled.</summary>
+    string? Prompt(string title, string label, string initial);
+
+    /// <summary>Shows the usage-statistics window (modal).</summary>
+    void ShowStats(StatsViewModel viewModel);
+
+    /// <summary>Shows the category-management window (modal).</summary>
+    void ShowCategoryManager(CategoryManagerViewModel viewModel);
 }

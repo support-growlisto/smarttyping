@@ -18,6 +18,8 @@ internal static class Strings
             ["Main_Import"] = ("Import", "นำเข้า"),
             ["Main_Export"] = ("Export", "ส่งออก"),
             ["Main_Settings"] = ("Settings", "ตั้งค่า"),
+            ["Main_Stats"] = ("Stats", "สถิติ"),
+            ["Main_ManageCategories"] = ("Manage", "จัดการ"),
             ["Main_SearchTooltip"] = ("Search triggers and content", "ค้นหาคำสั่งและเนื้อหา"),
             ["Main_Col_On"] = ("On", "เปิด"),
             ["Main_Col_Trigger"] = ("Trigger", "คำสั่ง"),
@@ -89,6 +91,31 @@ internal static class Strings
             // Placeholder input
             ["Input_Title"] = ("Fill in the details", "กรอกข้อมูล"),
             ["Input_Insert"] = ("Insert", "แทรก"),
+
+            // Stats
+            ["Stats_Title"] = ("Usage statistics", "สถิติการใช้งาน"),
+            ["Stats_TotalSnippets"] = ("Snippets", "จำนวน snippet"),
+            ["Stats_Enabled"] = ("{0} enabled", "เปิดใช้ {0}"),
+            ["Stats_TotalExpansions"] = ("Total expansions", "ขยายทั้งหมด (ครั้ง)"),
+            ["Stats_TimeSaved"] = ("Estimated time saved", "เวลาที่ประหยัด (ประมาณ)"),
+            ["Stats_Minutes"] = ("{0} min", "{0} นาที"),
+            ["Stats_Seconds"] = ("{0} s", "{0} วินาที"),
+            ["Stats_TopUsed"] = ("Most used", "ใช้บ่อยสุด"),
+            ["Stats_None"] = ("No usage yet.", "ยังไม่มีการใช้งาน"),
+            ["Stats_Clear"] = ("Clear stats", "ล้างสถิติ"),
+            ["Stats_ClearConfirm"] = ("Reset all usage counts and history?", "รีเซ็ตยอดการใช้และประวัติทั้งหมด?"),
+
+            // Categories
+            ["Cat_Title"] = ("Manage categories", "จัดการหมวดหมู่"),
+            ["Cat_Add"] = ("Add", "เพิ่ม"),
+            ["Cat_Rename"] = ("Rename", "เปลี่ยนชื่อ"),
+            ["Cat_Delete"] = ("Delete", "ลบ"),
+            ["Cat_NamePrompt"] = ("Category name:", "ชื่อหมวดหมู่:"),
+            ["Cat_DeleteConfirm"] = ("Delete category ‘{0}’? Its snippets are kept (uncategorized).", "ลบหมวดหมู่ ‘{0}’? snippet ในหมวดจะยังอยู่ (ไม่มีหมวด)"),
+            ["Cat_Duplicate"] = ("A category with that name already exists.", "มีหมวดหมู่ชื่อนี้อยู่แล้ว"),
+
+            // Generic prompt
+            ["Prompt_Ok"] = ("OK", "ตกลง"),
 
             // Tray
             ["Tray_Show"] = ("Show manager", "เปิดหน้าจัดการ"),

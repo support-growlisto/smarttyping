@@ -64,4 +64,24 @@ public sealed class DialogService : IDialogService
         System.Windows.MessageBox.Show(
             System.Windows.Application.Current.MainWindow!, message, title,
             MessageBoxButton.OK, MessageBoxImage.Information);
+
+    public string? Prompt(string title, string label, string initial)
+    {
+        var window = new InputPromptWindow(title, label, initial) { Owner = Owner() };
+        return window.ShowDialog() == true ? window.Value : null;
+    }
+
+    public void ShowStats(StatsViewModel viewModel)
+    {
+        var window = new StatsWindow(viewModel) { Owner = Owner() };
+        window.ShowDialog();
+    }
+
+    public void ShowCategoryManager(CategoryManagerViewModel viewModel)
+    {
+        var window = new CategoryManagerWindow(viewModel) { Owner = Owner() };
+        window.ShowDialog();
+    }
+
+    private static Window Owner() => System.Windows.Application.Current.MainWindow!;
 }

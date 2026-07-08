@@ -1,0 +1,80 @@
+<Window x:Class="SmartTyping.UI.Views.StatsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SmartTyping.UI.Localization"
+        Title="{Binding [Stats_Title], Source={x:Static loc:LocalizationManager.Instance}}"
+        Width="380" Height="440" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        ShowInTaskbar="False" FontFamily="Segoe UI" FontSize="13">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Headline numbers -->
+        <UniformGrid Grid.Row="0" Columns="3" Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock Text="{Binding TotalSnippets}" FontSize="26" FontWeight="Bold" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource Brush.Accent}" />
+                <TextBlock Text="{Binding [Stats_TotalSnippets], Source={x:Static loc:LocalizationManager.Instance}}"
+                           HorizontalAlignment="Center" Foreground="{DynamicResource Brush.SubtleForeground}" />
+                <TextBlock Text="{Binding EnabledText}" HorizontalAlignment="Center" FontSize="11"
+                           Foreground="{DynamicResource Brush.FaintForeground}" />
+            </StackPanel>
+            <StackPanel>
+                <TextBlock Text="{Binding TotalExpansions}" FontSize="26" FontWeight="Bold" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource Brush.Accent}" />
+                <TextBlock Text="{Binding [Stats_TotalExpansions], Source={x:Static loc:LocalizationManager.Instance}}"
+                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brush.SubtleForeground}" />
+            </StackPanel>
+            <StackPanel>
+                <TextBlock Text="{Binding TimeSavedText}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource Brush.Accent}" />
+                <TextBlock Text="{Binding [Stats_TimeSaved], Source={x:Static loc:LocalizationManager.Instance}}"
+                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brush.SubtleForeground}" />
+            </StackPanel>
+        </UniformGrid>
+
+        <TextBlock Grid.Row="1" FontWeight="SemiBold" Margin="0,0,0,6"
+                   Text="{Binding [Stats_TopUsed], Source={x:Static loc:LocalizationManager.Instance}}" />
+
+        <Grid Grid.Row="2">
+            <ListBox ItemsSource="{Binding TopUsed}" BorderThickness="0">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <DockPanel Margin="2,3">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding UsageCount}" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.Accent}" />
+                            <TextBlock Text="{Binding Trigger}" />
+                        </DockPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center"
+                       Foreground="{DynamicResource Brush.FaintForeground}"
+                       Text="{Binding [Stats_None], Source={x:Static loc:LocalizationManager.Instance}}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasUsage}" Value="False">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Command="{Binding ClearCommand}" Padding="12,4" Margin="0,0,8,0"
+                    Content="{Binding [Stats_Clear], Source={x:Static loc:LocalizationManager.Instance}}" />
+            <Button Padding="16,4" IsCancel="True" Click="OnClose"
+                    Content="{Binding [Settings_Close], Source={x:Static loc:LocalizationManager.Instance}}" />
+        </StackPanel>
+    </Grid>
+</Window>

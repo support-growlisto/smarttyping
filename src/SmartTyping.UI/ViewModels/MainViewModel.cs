@@ -52,6 +52,8 @@ public sealed class MainViewModel : ObservableObject
         RefreshCommand = new AsyncRelayCommand(LoadAsync);
         ImportCommand = new AsyncRelayCommand(ImportAsync);
         ExportCommand = new AsyncRelayCommand(ExportAsync);
+        StatsCommand = new RelayCommand(OpenStats);
+        ManageCategoriesCommand = new AsyncRelayCommand(ManageCategoriesAsync);
     }
 
     public SettingsViewModel Settings { get; }
@@ -66,6 +68,8 @@ public sealed class MainViewModel : ObservableObject
     public ICommand RefreshCommand { get; }
     public ICommand ImportCommand { get; }
     public ICommand ExportCommand { get; }
+    public ICommand StatsCommand { get; }
+    public ICommand ManageCategoriesCommand { get; }
 
     public string SearchText
     {
@@ -222,6 +226,21 @@ public sealed class MainViewModel : ObservableObject
         await _snippets.DeleteAsync(SelectedSnippet.Id);
         await LoadSnippetsAsync();
         StatusMessage = LocalizationManager.Instance["Status_Deleted"];
+    }
+
+    private void OpenStats()
+    {
+        var vm = new StatsViewModel(_snippets, _clock, _dialogs);
+        _dialogs.ShowStats(vm);
+    }
+
+    private async Task ManageCategoriesAsync()
+    {
+        var vm = new CategoryManagerViewModel(_categories, _clock, _dialogs);
+        _dialogs.ShowCategoryManager(vm);
+        // Categories may have changed — refresh the filter list and grid.
+        await LoadCategoriesAsync();
+        await LoadSnippetsAsync();
     }
 
     private async Task ExportAsync()

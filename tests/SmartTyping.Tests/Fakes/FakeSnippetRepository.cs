@@ -69,4 +69,15 @@ public sealed class FakeSnippetRepository : ISnippetRepository
         snippet?.RegisterUse(usedUtc);
         return Task.CompletedTask;
     }
+
+    public Task ResetUsageAsync(DateTime updatedUtc)
+    {
+        foreach (var s in _snippets)
+        {
+            s.UsageCount = 0;
+            s.UpdatedUtc = updatedUtc;
+        }
+
+        return Task.CompletedTask;
+    }
 }

@@ -26,4 +26,7 @@ public interface ISnippetRepository
     /// A single atomic operation.
     /// </summary>
     Task RegisterUsageAsync(int snippetId, DateTime usedUtc);
+
+    /// <summary>Clears all usage: resets every snippet's count to 0 and empties the usage history.</summary>
+    Task ResetUsageAsync(DateTime updatedUtc);
 }

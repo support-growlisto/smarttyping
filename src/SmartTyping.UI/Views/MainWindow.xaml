@@ -21,8 +21,12 @@
 
         <!-- Left: categories + settings -->
         <DockPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,0">
-            <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0,0,0,6"
-                       Text="{Binding [Main_Categories], Source={x:Static loc:LocalizationManager.Instance}}" />
+            <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                <TextBlock FontWeight="SemiBold" VerticalAlignment="Center"
+                           Text="{Binding [Main_Categories], Source={x:Static loc:LocalizationManager.Instance}}" />
+                <Button HorizontalAlignment="Right" Padding="6,1" FontSize="11" Command="{Binding ManageCategoriesCommand}"
+                        Content="{Binding [Main_ManageCategories], Source={x:Static loc:LocalizationManager.Instance}}" />
+            </Grid>
             <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -34,8 +38,16 @@
                     <Button Grid.Column="1" Command="{Binding ExportCommand}" Padding="8,4" Margin="2,0,0,0"
                             Content="{Binding [Main_Export], Source={x:Static loc:LocalizationManager.Instance}}" />
                 </Grid>
-                <Button Margin="0,6,0,0" Padding="8,4" Click="OnSettingsClick"
-                        Content="{Binding [Main_Settings], Source={x:Static loc:LocalizationManager.Instance}}" />
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Command="{Binding StatsCommand}" Padding="8,4" Margin="0,0,2,0"
+                            Content="{Binding [Main_Stats], Source={x:Static loc:LocalizationManager.Instance}}" />
+                    <Button Grid.Column="1" Padding="8,4" Margin="2,0,0,0" Click="OnSettingsClick"
+                            Content="{Binding [Main_Settings], Source={x:Static loc:LocalizationManager.Instance}}" />
+                </Grid>
             </StackPanel>
             <ListBox ItemsSource="{Binding CategoryFilters}"
                      SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"

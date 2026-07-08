@@ -85,6 +85,19 @@ public sealed class SnippetRepository : ISnippetRepository
         tx.Commit();
     }
 
+    public async Task ResetUsageAsync(DateTime updatedUtc)
+    {
+        using var db = _factory.CreateOpenConnection();
+        using var tx = db.BeginTransaction();
+
+        await db.ExecuteAsync(
+            "UPDATE snippets SET UsageCount = 0, UpdatedUtc = @updatedUtc;",
+            new { updatedUtc = SqliteTime.ToStorage(updatedUtc) }, tx);
+        await db.ExecuteAsync("DELETE FROM usage_history;", transaction: tx);
+
+        tx.Commit();
+    }
+
     private static object ToRow(Snippet s) => new
     {
         s.Id,

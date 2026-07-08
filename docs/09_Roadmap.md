@@ -27,7 +27,8 @@ A living view of where SmartTyping Desktop is headed. Order is by priority, not 
 
 - Dark mode (follow-system + manual), Thai/English localization.
 - `{input:Label}` placeholders, `{cursor}`, date/time formats & offsets.
-- Quick-picker, convert-last-word, add-snippet-from-selection.
+- Quick-picker (fuzzy search), convert-last-word, add-snippet-from-selection.
+- Configurable hotkeys, category management, usage statistics.
 - Import/Export, onboarding, start-with-Windows, single-instance, secure-field guard.
 
 ## Later (v0.3–v1.0)

@@ -1,0 +1,33 @@
+<Window x:Class="SmartTyping.UI.Views.CategoryManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SmartTyping.UI.Localization"
+        Title="{Binding [Cat_Title], Source={x:Static loc:LocalizationManager.Instance}}"
+        Width="360" Height="360" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        ShowInTaskbar="False" FontFamily="Segoe UI" FontSize="13">
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ListBox Grid.Row="0" Grid.Column="0" ItemsSource="{Binding Categories}"
+                 SelectedItem="{Binding Selected, Mode=TwoWay}" DisplayMemberPath="Name" Margin="0,0,10,0" />
+
+        <StackPanel Grid.Row="0" Grid.Column="1" Width="96">
+            <Button Command="{Binding AddCommand}" Padding="0,5" Margin="0,0,0,6"
+                    Content="{Binding [Cat_Add], Source={x:Static loc:LocalizationManager.Instance}}" />
+            <Button Command="{Binding RenameCommand}" Padding="0,5" Margin="0,0,0,6"
+                    Content="{Binding [Cat_Rename], Source={x:Static loc:LocalizationManager.Instance}}" />
+            <Button Command="{Binding DeleteCommand}" Padding="0,5"
+                    Content="{Binding [Cat_Delete], Source={x:Static loc:LocalizationManager.Instance}}" />
+        </StackPanel>
+
+        <Button Grid.Row="1" Grid.Column="1" Padding="0,5" Margin="0,10,0,0" IsCancel="True" Click="OnClose"
+                Content="{Binding [Settings_Close], Source={x:Static loc:LocalizationManager.Instance}}" />
+    </Grid>
+</Window>
