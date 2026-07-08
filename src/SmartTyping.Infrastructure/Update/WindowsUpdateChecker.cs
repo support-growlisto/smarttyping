@@ -13,8 +13,7 @@ namespace SmartTyping.Infrastructure.Update;
 /// </summary>
 public sealed class WindowsUpdateChecker : IUpdateService
 {
-    // TODO: point this at the real repository once the project is published.
-    private const string LatestReleaseUrl = "https://api.github.com/repos/smarttyping/smarttyping/releases/latest";
+    private const string LatestReleaseUrl = "https://api.github.com/repos/support-growlisto/smarttyping/releases/latest";
 
     private readonly HttpClient _http;
     private readonly ILogger<WindowsUpdateChecker> _logger;
