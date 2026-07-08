@@ -28,7 +28,8 @@ public sealed class SnippetEditViewModel : ObservableObject
         IDateTimeProvider clock,
         ITemplateEngine templateEngine,
         IReadOnlyList<Category> categories,
-        Snippet? existing)
+        Snippet? existing,
+        string? initialContent = null)
     {
         _snippets = snippets;
         _clock = clock;
@@ -37,7 +38,7 @@ public sealed class SnippetEditViewModel : ObservableObject
         _model = existing ?? new Snippet();
 
         _trigger = _model.Trigger;
-        _content = _model.Content;
+        _content = _isNew && !string.IsNullOrEmpty(initialContent) ? initialContent : _model.Content;
         _isEnabled = _model.IsEnabled;
 
         Categories = new ObservableCollection<Category>(categories);

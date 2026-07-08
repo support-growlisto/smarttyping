@@ -16,11 +16,11 @@
 
         <TextBlock Grid.Row="0" FontSize="20" FontWeight="SemiBold"
                    Text="{Binding [Onb_Heading], Source={x:Static loc:LocalizationManager.Instance}}" />
-        <TextBlock Grid.Row="1" Margin="0,6,0,16" Foreground="#555" TextWrapping="Wrap"
+        <TextBlock Grid.Row="1" Margin="0,6,0,16" Foreground="{DynamicResource Brush.SubtleForeground}" TextWrapping="Wrap"
                    Text="{Binding [Onb_Intro], Source={x:Static loc:LocalizationManager.Instance}}" />
 
         <StackPanel Grid.Row="2">
-            <Border Background="#F1F0FB" CornerRadius="6" Padding="14" Margin="0,0,0,12">
+            <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6" Padding="14" Margin="0,0,0,12">
                 <StackPanel>
                     <TextBlock FontWeight="SemiBold"
                                Text="{Binding [Onb_Fix_Title], Source={x:Static loc:LocalizationManager.Instance}}" />
@@ -29,7 +29,7 @@
                 </StackPanel>
             </Border>
 
-            <Border Background="#F1F0FB" CornerRadius="6" Padding="14" Margin="0,0,0,12">
+            <Border Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6" Padding="14" Margin="0,0,0,12">
                 <StackPanel>
                     <TextBlock FontWeight="SemiBold"
                                Text="{Binding [Onb_Expand_Title], Source={x:Static loc:LocalizationManager.Instance}}" />
@@ -38,7 +38,7 @@
                 </StackPanel>
             </Border>
 
-            <TextBlock Foreground="#555" TextWrapping="Wrap"
+            <TextBlock Foreground="{DynamicResource Brush.SubtleForeground}" TextWrapping="Wrap"
                        Text="{Binding [Onb_Tray], Source={x:Static loc:LocalizationManager.Instance}}" />
         </StackPanel>
 

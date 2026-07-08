@@ -52,6 +52,10 @@ internal static class Strings
             ["Settings_ExpandSnippet"] = ("Expand snippet:", "ขยาย snippet:"),
             ["Settings_StartWithWindows"] = ("Start with Windows", "เปิดพร้อม Windows"),
             ["Settings_Language"] = ("Language:", "ภาษา:"),
+            ["Settings_Theme"] = ("Theme:", "ธีม:"),
+            ["Theme_System"] = ("System", "ตามระบบ"),
+            ["Theme_Light"] = ("Light", "สว่าง"),
+            ["Theme_Dark"] = ("Dark", "มืด"),
             ["Settings_OpenLogs"] = ("Open logs", "เปิด log"),
             ["Settings_Close"] = ("Close", "ปิด"),
 

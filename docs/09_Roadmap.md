@@ -23,6 +23,13 @@ A living view of where SmartTyping Desktop is headed. Order is by priority, not 
 - ~~Snippet quick-picker / command palette (fuzzy search + insert)~~ — **done** (v0.1): Ctrl+Shift+Space.
 - Better direction detection and a manual "convert to Thai / to English" choice.
 
+## Recently shipped (v0.1, beyond the original MVP)
+
+- Dark mode (follow-system + manual), Thai/English localization.
+- `{input:Label}` placeholders, `{cursor}`, date/time formats & offsets.
+- Quick-picker, convert-last-word, add-snippet-from-selection.
+- Import/Export, onboarding, start-with-Windows, single-instance, secure-field guard.
+
 ## Later (v0.3–v1.0)
 
 - Repository integration tests + migration framework hardening.

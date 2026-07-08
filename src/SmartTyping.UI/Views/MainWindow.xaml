@@ -80,9 +80,9 @@
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                             Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}"
                             IsHitTestVisible="False">
-                    <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="#888" HorizontalAlignment="Center"
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.SubtleForeground}" HorizontalAlignment="Center"
                                Text="{Binding [Main_Empty_Title], Source={x:Static loc:LocalizationManager.Instance}}" />
-                    <TextBlock Margin="0,6,0,0" Foreground="#999" HorizontalAlignment="Center" TextAlignment="Center"
+                    <TextBlock Margin="0,6,0,0" Foreground="{DynamicResource Brush.FaintForeground}" HorizontalAlignment="Center" TextAlignment="Center"
                                Text="{Binding [Main_Empty_Hint], Source={x:Static loc:LocalizationManager.Instance}}" />
                 </StackPanel>
             </Grid>

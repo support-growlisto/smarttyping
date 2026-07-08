@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SmartTyping.UI.Localization"
         Title="{Binding [Settings_Title], Source={x:Static loc:LocalizationManager.Instance}}"
-        Height="330" Width="400"
+        Height="375" Width="400"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         FontFamily="Segoe UI" FontSize="13">
     <StackPanel Margin="16">
@@ -29,6 +29,13 @@
             <TextBlock Text="{Binding [Settings_Language], Source={x:Static loc:LocalizationManager.Instance}}"
                        Width="120" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}"
+                      DisplayMemberPath="DisplayName" Width="140" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+            <TextBlock Text="{Binding [Settings_Theme], Source={x:Static loc:LocalizationManager.Instance}}"
+                       Width="120" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
                       DisplayMemberPath="DisplayName" Width="140" />
         </StackPanel>
 

@@ -27,6 +27,7 @@ public partial class App : System.Windows.Application
     private LanguageHotkeyCoordinator? _hotkey;
     private SnippetExpansionCoordinator? _expansion;
     private QuickPickerCoordinator? _picker;
+    private CaptureSnippetCoordinator? _capture;
 
     /// <summary>True once the user has chosen to exit, so the main window stops hiding-to-tray.</summary>
     public static bool IsShuttingDown { get; private set; }
@@ -57,8 +58,9 @@ public partial class App : System.Windows.Application
         services.AddSingleton<LanguageHotkeyCoordinator>();
         services.AddSingleton<SnippetExpansionCoordinator>();
         services.AddSingleton<QuickPickerCoordinator>();
-        services.AddTransient<SettingsViewModel>();
-        services.AddTransient<MainViewModel>();
+        services.AddSingleton<CaptureSnippetCoordinator>();
+        services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
 
         _services = services.BuildServiceProvider();
@@ -83,15 +85,17 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        // Apply the saved UI language (default Thai) before any window is created.
+        // Apply saved UI language (default Thai) and theme (default: follow system) before any window.
         try
         {
-            var language = _services.GetRequiredService<SettingsService>().GetLanguageAsync().GetAwaiter().GetResult();
-            Localization.LocalizationManager.Instance.SetLanguage(language);
+            var settings = _services.GetRequiredService<SettingsService>();
+            Localization.LocalizationManager.Instance.SetLanguage(settings.GetLanguageAsync().GetAwaiter().GetResult());
+            Themes.ThemeManager.Apply(settings.GetThemeAsync().GetAwaiter().GetResult());
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to load UI language; using default.");
+            _logger.LogWarning(ex, "Failed to load UI language/theme; using defaults.");
+            Themes.ThemeManager.Apply(Themes.ThemeManager.System);
         }
 
         var mainWindow = _services.GetRequiredService<MainWindow>();
@@ -116,6 +120,9 @@ public partial class App : System.Windows.Application
         _picker.Inserted += (_, text) =>
             Dispatcher.Invoke(() => _tray?.ShowBalloon(Localization.LocalizationManager.Instance["Tray_Expanded"], Preview(text)));
         _picker.Start();
+
+        _capture = _services.GetRequiredService<CaptureSnippetCoordinator>();
+        _capture.Start();
 
         // Surface the window when a second launch signals us.
         _singleInstance.StartListening(() => Dispatcher.Invoke(ShowMainWindow));
@@ -184,6 +191,7 @@ public partial class App : System.Windows.Application
         _hotkey?.Stop();
         _expansion?.Stop();
         _picker?.Stop();
+        _capture?.Stop();
         _tray?.Dispose();
         Shutdown(0);
     }
@@ -193,6 +201,7 @@ public partial class App : System.Windows.Application
         _hotkey?.Dispose();
         _expansion?.Dispose();
         _picker?.Dispose();
+        _capture?.Dispose();
         _tray?.Dispose();
         _singleInstance?.Dispose();
         _services?.Dispose();

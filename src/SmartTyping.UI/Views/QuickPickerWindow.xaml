@@ -6,7 +6,8 @@
         WindowStartupLocation="CenterScreen" Topmost="True" ShowInTaskbar="False"
         AllowsTransparency="True" Background="Transparent"
         FontFamily="Segoe UI" FontSize="13">
-    <Border Background="White" CornerRadius="10" BorderBrush="#CCC" BorderThickness="1">
+    <Border Background="{DynamicResource Brush.Window}" CornerRadius="10"
+            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
         <Border.Effect>
             <DropShadowEffect BlurRadius="18" ShadowDepth="2" Opacity="0.3" />
         </Border.Effect>
@@ -19,7 +20,7 @@
 
             <TextBox x:Name="SearchBox" Grid.Row="0" Padding="8,6" FontSize="15"
                      Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
-                     BorderBrush="#DDD" BorderThickness="0,0,0,1" />
+                     BorderBrush="{DynamicResource Brush.ControlBorder}" BorderThickness="0,0,0,1" />
 
             <ListBox x:Name="ResultList" Grid.Row="1" Margin="0,8,0,0" BorderThickness="0"
                      ItemsSource="{Binding Results}" SelectedItem="{Binding Selected, Mode=TwoWay}"
@@ -29,13 +30,13 @@
                     <DataTemplate>
                         <StackPanel Margin="4,3">
                             <TextBlock Text="{Binding Trigger}" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding Preview}" Foreground="#888" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Preview}" Foreground="{DynamicResource Brush.SubtleForeground}" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <TextBlock Grid.Row="2" Margin="2,8,0,0" Foreground="#AAA" FontSize="11"
+            <TextBlock Grid.Row="2" Margin="2,8,0,0" Foreground="{DynamicResource Brush.FaintForeground}" FontSize="11"
                        Text="{Binding [Picker_Hint], Source={x:Static loc:LocalizationManager.Instance}}" />
         </Grid>
     </Border>

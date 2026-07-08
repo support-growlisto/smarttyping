@@ -16,6 +16,9 @@ public interface IKeyboardHook : IDisposable
     /// <summary>Raised when the quick-picker hotkey (default Ctrl+Shift+Space) is pressed.</summary>
     event EventHandler? PickerHotkeyPressed;
 
+    /// <summary>Raised when the capture-to-snippet hotkey (default Ctrl+Shift+N) is pressed.</summary>
+    event EventHandler? CaptureHotkeyPressed;
+
     /// <summary>Begins listening for the hotkey.</summary>
     void Start();
 

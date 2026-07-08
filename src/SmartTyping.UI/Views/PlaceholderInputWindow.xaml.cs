@@ -1,8 +1,8 @@
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
 using SmartTyping.UI.Services;
 using SmartTyping.UI.ViewModels;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace SmartTyping.UI.Views;
 

@@ -21,6 +21,7 @@ internal static class NativeMethods
     public const int VK_E = 0x45;
     public const int VK_LEFT = 0x25;
     public const int VK_SPACE = 0x20;
+    public const int VK_N = 0x4E;
 
     public const uint INPUT_KEYBOARD = 1;
     public const uint KEYEVENTF_KEYUP = 0x0002;

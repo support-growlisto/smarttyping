@@ -33,6 +33,8 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
     public event EventHandler? PickerHotkeyPressed;
 
+    public event EventHandler? CaptureHotkeyPressed;
+
     public void Start()
     {
         if (_hookHandle != IntPtr.Zero)
@@ -77,6 +79,9 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                         break;
                     case NativeMethods.VK_SPACE:
                         Raise(PickerHotkeyPressed);
+                        break;
+                    case NativeMethods.VK_N:
+                        Raise(CaptureHotkeyPressed);
                         break;
                 }
             }

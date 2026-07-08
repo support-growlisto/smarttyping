@@ -11,5 +11,6 @@ public static class SettingKeys
     public const string StartWithWindows = "StartWithWindows";
     public const string OnboardingCompleted = "OnboardingCompleted";
     public const string Language = "Language";
+    public const string Theme = "Theme";
     public const string SchemaVersion = "SchemaVersion";
 }

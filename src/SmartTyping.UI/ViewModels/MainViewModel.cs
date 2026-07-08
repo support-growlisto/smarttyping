@@ -175,10 +175,14 @@ public sealed class MainViewModel : ObservableObject
         StatusMessage = LocalizationManager.Instance.Format(item.IsEnabled ? "Status_Enabled" : "Status_Disabled", item.Trigger);
     }
 
-    private async Task AddAsync()
+    private Task AddAsync() => AddFromContentAsync(null);
+
+    /// <summary>Opens the Add dialog, optionally pre-filled with <paramref name="initialContent"/>
+    /// (used by "add snippet from selection").</summary>
+    public async Task AddFromContentAsync(string? initialContent)
     {
         var categories = await _categories.GetAllAsync();
-        var editVm = new SnippetEditViewModel(_snippets, _clock, _templateEngine, categories, existing: null);
+        var editVm = new SnippetEditViewModel(_snippets, _clock, _templateEngine, categories, existing: null, initialContent);
         if (_dialogs.ShowSnippetEditor(editVm))
         {
             await LoadSnippetsAsync();

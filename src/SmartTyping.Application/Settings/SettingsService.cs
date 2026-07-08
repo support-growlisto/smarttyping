@@ -47,6 +47,16 @@ public sealed class SettingsService
     public Task SetLanguageAsync(string language) =>
         _repository.SetAsync(SettingKeys.Language, language);
 
+    /// <summary>The UI theme: "system" (default), "light", or "dark".</summary>
+    public async Task<string> GetThemeAsync()
+    {
+        var value = await _repository.GetAsync(SettingKeys.Theme);
+        return string.IsNullOrWhiteSpace(value) ? "system" : value.Trim();
+    }
+
+    public Task SetThemeAsync(string theme) =>
+        _repository.SetAsync(SettingKeys.Theme, theme);
+
     private async Task<bool> GetBoolAsync(string key, bool defaultValue)
     {
         var raw = await _repository.GetAsync(key);

@@ -142,8 +142,9 @@ sample snippets.
 - **Ctrl + Shift + L** — convert text between Thai Kedmanee and English QWERTY. With a selection it converts that; with no selection it converts the **last typed word**.
 - **Ctrl + Shift + E** — expand the selected trigger (e.g. select `/phone`, press the hotkey).
 - **Ctrl + Shift + Space** — open the **quick-picker**: search your snippets and insert one at the caret.
+- **Ctrl + Shift + N** — **add a snippet from the current selection** (opens the Add dialog pre-filled).
 
-The UI is **Thai by default**; switch to English in Settings.
+The UI is **Thai by default** (switch to English in Settings) and follows the system **light/dark** theme (overridable in Settings).
 
 ## How to publish (self-contained single file)
 

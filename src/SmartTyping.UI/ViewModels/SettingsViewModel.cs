@@ -2,11 +2,15 @@ using SmartTyping.Application.Abstractions;
 using SmartTyping.Application.Settings;
 using SmartTyping.UI.Localization;
 using SmartTyping.UI.Mvvm;
+using SmartTyping.UI.Themes;
 
 namespace SmartTyping.UI.ViewModels;
 
 /// <summary>A selectable UI language.</summary>
 public sealed record LanguageOption(string Code, string DisplayName);
+
+/// <summary>A selectable UI theme (system/light/dark).</summary>
+public sealed record ThemeOption(string Code, string DisplayName);
 
 /// <summary>View model for the settings view. Persists each toggle immediately.</summary>
 public sealed class SettingsViewModel : ObservableObject
@@ -19,12 +23,22 @@ public sealed class SettingsViewModel : ObservableObject
     private bool _languageCorrectionEnabled = true;
     private bool _startWithWindows;
     private LanguageOption _selectedLanguage;
+    private ThemeOption _selectedTheme;
 
     public SettingsViewModel(SettingsService settings, IStartupService startup)
     {
         _settings = settings;
         _startup = startup;
         _selectedLanguage = Languages[0];
+
+        var loc = LocalizationManager.Instance;
+        Themes = new[]
+        {
+            new ThemeOption(ThemeManager.System, loc["Theme_System"]),
+            new ThemeOption(ThemeManager.Light, loc["Theme_Light"]),
+            new ThemeOption(ThemeManager.Dark, loc["Theme_Dark"])
+        };
+        _selectedTheme = Themes[0];
     }
 
     public IReadOnlyList<LanguageOption> Languages { get; } = new[]
@@ -32,6 +46,24 @@ public sealed class SettingsViewModel : ObservableObject
         new LanguageOption(LocalizationManager.Thai, "ไทย"),
         new LanguageOption(LocalizationManager.English, "English")
     };
+
+    public IReadOnlyList<ThemeOption> Themes { get; }
+
+    public ThemeOption SelectedTheme
+    {
+        get => _selectedTheme;
+        set
+        {
+            if (SetProperty(ref _selectedTheme, value) && value is not null)
+            {
+                ThemeManager.Apply(value.Code);
+                if (!_loading)
+                {
+                    _ = _settings.SetThemeAsync(value.Code);
+                }
+            }
+        }
+    }
 
     public LanguageOption SelectedLanguage
     {
@@ -112,6 +144,9 @@ public sealed class SettingsViewModel : ObservableObject
 
             var languageCode = await _settings.GetLanguageAsync();
             SelectedLanguage = Languages.FirstOrDefault(l => l.Code == languageCode) ?? Languages[0];
+
+            var themeCode = await _settings.GetThemeAsync();
+            SelectedTheme = Themes.FirstOrDefault(t => t.Code == themeCode) ?? Themes[0];
         }
         finally
         {
