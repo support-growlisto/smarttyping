@@ -20,7 +20,8 @@ AppId={{E0B2C6E4-4E1D-4F0A-9C6B-5A7D3F2B1A90}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
-DefaultDirName={autopf}\{#AppName}
+; Per-user install (no admin): install under the user's local app data, never Program Files.
+DefaultDirName={localappdata}\Programs\{#AppName}
 DefaultGroupName={#AppName}
 UninstallDisplayIcon={app}\{#AppExe}
 DisableProgramGroupPage=yes
@@ -48,7 +49,7 @@ Source: "{#PublishDir}\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion 
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
+Name: "{userdesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
