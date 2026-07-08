@@ -43,6 +43,7 @@ internal static class NativeMethods
 
     public const uint INPUT_KEYBOARD = 1;
     public const uint KEYEVENTF_KEYUP = 0x0002;
+    public const uint KEYEVENTF_UNICODE = 0x0004;
 
     // Window style flags for secure-field detection.
     public const int GWL_STYLE = -16;
@@ -55,10 +56,34 @@ internal static class NativeMethods
         public InputUnion u;
     }
 
+    // The union MUST contain the largest member (MOUSEINPUT) so Marshal.SizeOf<INPUT> equals the
+    // size the OS expects (40 bytes on x64). If only KEYBDINPUT were present the struct would be too
+    // small and SendInput would fail silently (cbSize mismatch), injecting nothing.
     [StructLayout(LayoutKind.Explicit)]
     public struct InputUnion
     {
+        [FieldOffset(0)] public MOUSEINPUT mi;
         [FieldOffset(0)] public KEYBDINPUT ki;
+        [FieldOffset(0)] public HARDWAREINPUT hi;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MOUSEINPUT
+    {
+        public int dx;
+        public int dy;
+        public uint mouseData;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct HARDWAREINPUT
+    {
+        public uint uMsg;
+        public ushort wParamL;
+        public ushort wParamH;
     }
 
     [StructLayout(LayoutKind.Sequential)]

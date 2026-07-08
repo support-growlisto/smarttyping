@@ -5,7 +5,8 @@
         Title="{Binding [Onb_Title], Source={x:Static loc:LocalizationManager.Instance}}"
         Height="440" Width="470"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
-        FontFamily="Segoe UI" FontSize="13">
+        FontFamily="Segoe UI" FontSize="13"
+        Background="{DynamicResource Brush.Window}" Foreground="{DynamicResource Brush.Foreground}">
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

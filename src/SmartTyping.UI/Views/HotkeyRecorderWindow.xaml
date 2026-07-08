@@ -4,7 +4,8 @@
         xmlns:loc="clr-namespace:SmartTyping.UI.Localization"
         Title="{Binding [Settings_Change], Source={x:Static loc:LocalizationManager.Instance}}"
         Width="340" Height="150" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
-        ShowInTaskbar="False" FontFamily="Segoe UI" FontSize="14">
+        ShowInTaskbar="False" FontFamily="Segoe UI" FontSize="14"
+        Background="{DynamicResource Brush.Window}" Foreground="{DynamicResource Brush.Foreground}">
     <Grid Margin="20">
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
             <TextBlock HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"

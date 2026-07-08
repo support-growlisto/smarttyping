@@ -4,7 +4,8 @@
         xmlns:loc="clr-namespace:SmartTyping.UI.Localization"
         Title="{Binding [Cat_Title], Source={x:Static loc:LocalizationManager.Instance}}"
         Width="360" Height="360" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
-        ShowInTaskbar="False" FontFamily="Segoe UI" FontSize="13">
+        ShowInTaskbar="False" FontFamily="Segoe UI" FontSize="13"
+        Background="{DynamicResource Brush.Window}" Foreground="{DynamicResource Brush.Foreground}">
     <Grid Margin="16">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />

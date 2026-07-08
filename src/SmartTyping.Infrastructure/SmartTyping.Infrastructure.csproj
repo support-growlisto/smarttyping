@@ -22,4 +22,9 @@
     <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Let the integration tests assert P/Invoke struct layouts on internal types. -->
+    <InternalsVisibleTo Include="SmartTyping.IntegrationTests" />
+  </ItemGroup>
+
 </Project>

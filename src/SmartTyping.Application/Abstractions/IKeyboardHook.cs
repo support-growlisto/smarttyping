@@ -34,8 +34,17 @@ public interface IKeyboardHook : IDisposable
     /// </summary>
     event EventHandler<Language.LayoutSuggestion>? LayoutAutoCorrectRequested;
 
+    /// <summary>
+    /// Raised when auto-expand is enabled and the user finishes a word with a delimiter. The handler
+    /// checks whether the word is a snippet trigger and, if so, replaces it in place.
+    /// </summary>
+    event EventHandler<Language.WordBoundary>? SnippetWordCompleted;
+
     /// <summary>Enables/disables the non-destructive as-you-type layout suggestions.</summary>
     bool SuggestionsEnabled { get; set; }
+
+    /// <summary>Enables/disables automatic snippet expansion as you type (no hotkey).</summary>
+    bool AutoExpandEnabled { get; set; }
 
     /// <summary>
     /// When true (and <see cref="SuggestionsEnabled"/> is on), a detected wrong-layout word is

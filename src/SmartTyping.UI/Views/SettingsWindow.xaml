@@ -5,12 +5,18 @@
         Title="{Binding [Settings_Title], Source={x:Static loc:LocalizationManager.Instance}}"
         Height="450" Width="420" SizeToContent="Height"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
-        FontFamily="Segoe UI" FontSize="13">
+        FontFamily="Segoe UI" FontSize="13"
+        Background="{DynamicResource Brush.Window}" Foreground="{DynamicResource Brush.Foreground}">
     <StackPanel Margin="16">
         <TextBlock Text="{Binding [Settings_Features], Source={x:Static loc:LocalizationManager.Instance}}"
                    FontWeight="SemiBold" Margin="0,0,0,8" />
         <CheckBox Content="{Binding [Settings_ExpansionEnabled], Source={x:Static loc:LocalizationManager.Instance}}"
                   IsChecked="{Binding SnippetExpansionEnabled, Mode=TwoWay}" Margin="0,4" />
+        <CheckBox Content="{Binding [Settings_AutoExpand], Source={x:Static loc:LocalizationManager.Instance}}"
+                  IsChecked="{Binding AutoExpandEnabled, Mode=TwoWay}" Margin="24,2,0,0" />
+        <TextBlock Text="{Binding [Settings_AutoExpandHint], Source={x:Static loc:LocalizationManager.Instance}}"
+                   TextWrapping="Wrap" FontSize="11" Margin="48,0,0,0"
+                   Foreground="{DynamicResource Brush.SubtleForeground}" />
         <CheckBox Content="{Binding [Settings_CorrectionEnabled], Source={x:Static loc:LocalizationManager.Instance}}"
                   IsChecked="{Binding LanguageCorrectionEnabled, Mode=TwoWay}" Margin="0,4" />
         <CheckBox Content="{Binding [Settings_AutoCorrectSuggest], Source={x:Static loc:LocalizationManager.Instance}}"

@@ -44,7 +44,7 @@ public static class DependencyInjection
         services.AddSingleton<IClipboardService>(sp => sp.GetRequiredService<WindowsClipboardService>());
         services.AddSingleton<IClipboardBackup>(sp => sp.GetRequiredService<WindowsClipboardService>());
         services.AddSingleton<ITextInjector, WindowsTextInjector>();
-        services.AddSingleton<ILayoutAutoCorrector, WindowsLayoutAutoCorrector>();
+        services.AddSingleton<IInlineReplacer, WindowsInlineReplacer>();
         services.AddSingleton<ISelectionService, WindowsSelectionService>();
         services.AddSingleton<ISecureInputDetector, WindowsSecureInputDetector>();
         services.AddSingleton<IForegroundWindowService, WindowsForegroundWindowService>();

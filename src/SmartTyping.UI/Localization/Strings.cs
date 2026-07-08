@@ -49,6 +49,10 @@ internal static class Strings
             ["Settings_Title"] = ("Settings", "ตั้งค่า"),
             ["Settings_Features"] = ("Features", "ฟีเจอร์"),
             ["Settings_ExpansionEnabled"] = ("Enable snippet expansion", "เปิดการขยาย snippet"),
+            ["Settings_AutoExpand"] = ("Expand automatically as I type", "ขยายอัตโนมัติขณะพิมพ์"),
+            ["Settings_AutoExpandHint"] = (
+                "Type a trigger (e.g. /sig) then a space or tab and it's replaced instantly — no hotkey. Skips password fields.",
+                "พิมพ์คำสั่ง (เช่น /sig) แล้วเคาะ space หรือ tab จะแทนที่ให้ทันที ไม่ต้องกดคีย์ลัด · ข้ามช่องรหัสผ่าน"),
             ["Settings_CorrectionEnabled"] = ("Enable language correction", "เปิดการแก้ภาษา"),
             ["Settings_AutoCorrectSuggest"] = ("Suggest layout fixes as I type", "แนะนำการแก้เลย์เอาต์ขณะพิมพ์"),
             ["Settings_AutoCorrectSuggestHint"] = (

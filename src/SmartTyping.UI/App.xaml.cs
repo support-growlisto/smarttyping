@@ -29,6 +29,7 @@ public partial class App : System.Windows.Application
     private QuickPickerCoordinator? _picker;
     private CaptureSnippetCoordinator? _capture;
     private AiImproveCoordinator? _aiImprove;
+    private AutoExpandCoordinator? _autoExpand;
 
     // Throttle the as-you-type suggestion balloon so it can't spam the tray.
     private int _lastSuggestionTick;
@@ -64,6 +65,7 @@ public partial class App : System.Windows.Application
         services.AddSingleton<QuickPickerCoordinator>();
         services.AddSingleton<CaptureSnippetCoordinator>();
         services.AddSingleton<AiImproveCoordinator>();
+        services.AddSingleton<AutoExpandCoordinator>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
@@ -100,6 +102,7 @@ public partial class App : System.Windows.Application
             hook.UpdateBindings(settings.GetHotkeysAsync().GetAwaiter().GetResult());
             hook.SuggestionsEnabled = settings.IsAutoCorrectSuggestEnabledAsync().GetAwaiter().GetResult();
             hook.AutoApplySuggestions = settings.IsAutoCorrectAutoApplyEnabledAsync().GetAwaiter().GetResult();
+            hook.AutoExpandEnabled = settings.IsAutoExpandEnabledAsync().GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -144,6 +147,12 @@ public partial class App : System.Windows.Application
             Dispatcher.Invoke(() => _tray?.ShowBalloon(Localization.LocalizationManager.Instance["Tray_AiNotConfigured_Title"],
                 Localization.LocalizationManager.Instance["Tray_AiNotConfigured"]));
         _aiImprove.Start();
+
+        // Automatic snippet expansion as you type (opt-in).
+        _autoExpand = _services.GetRequiredService<AutoExpandCoordinator>();
+        _autoExpand.Expanded += (_, text) =>
+            Dispatcher.Invoke(() => _tray?.ShowBalloon(Localization.LocalizationManager.Instance["Tray_Expanded"], Preview(text)));
+        _autoExpand.Start();
 
         // As-you-type layout: a non-destructive hint, or (opt-in) an automatic in-place fix.
         var keyboardHook = _services.GetRequiredService<IKeyboardHook>();
@@ -243,6 +252,7 @@ public partial class App : System.Windows.Application
         _picker?.Stop();
         _capture?.Stop();
         _aiImprove?.Stop();
+        _autoExpand?.Stop();
         _tray?.Dispose();
         Shutdown(0);
     }
@@ -254,6 +264,7 @@ public partial class App : System.Windows.Application
         _picker?.Dispose();
         _capture?.Dispose();
         _aiImprove?.Dispose();
+        _autoExpand?.Dispose();
         _tray?.Dispose();
         _singleInstance?.Dispose();
         _services?.Dispose();
@@ -280,8 +291,8 @@ public partial class App : System.Windows.Application
         try
         {
             // Delete the wrong-layout word plus the space that closed it, and type the fix + a space.
-            var corrector = _services!.GetRequiredService<ILayoutAutoCorrector>();
-            var ok = await corrector.ReplaceLastWordAsync(suggestion.Original.Length + 1, suggestion.Suggestion + " ");
+            var replacer = _services!.GetRequiredService<IInlineReplacer>();
+            var ok = await replacer.ReplaceAsync(suggestion.Original.Length + 1, suggestion.Suggestion + " ");
             if (ok)
             {
                 var loc = Localization.LocalizationManager.Instance;

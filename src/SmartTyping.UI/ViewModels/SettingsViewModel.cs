@@ -55,6 +55,7 @@ public sealed class SettingsViewModel : ObservableObject
     private bool _languageCorrectionEnabled = true;
     private bool _autoCorrectSuggestEnabled;
     private bool _autoCorrectAutoApply;
+    private bool _autoExpandEnabled;
     private string _aiApiKey = string.Empty;
     private bool _startWithWindows;
     private bool _checkForUpdates;
@@ -232,6 +233,22 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    public bool AutoExpandEnabled
+    {
+        get => _autoExpandEnabled;
+        set
+        {
+            if (SetProperty(ref _autoExpandEnabled, value))
+            {
+                _hook.AutoExpandEnabled = value;
+                if (!_loading)
+                {
+                    _ = _settings.SetAutoExpandEnabledAsync(value);
+                }
+            }
+        }
+    }
+
     public string AiApiKey
     {
         get => _aiApiKey;
@@ -312,6 +329,7 @@ public sealed class SettingsViewModel : ObservableObject
             LanguageCorrectionEnabled = await _settings.IsLanguageCorrectionEnabledAsync();
             AutoCorrectSuggestEnabled = await _settings.IsAutoCorrectSuggestEnabledAsync();
             AutoCorrectAutoApply = await _settings.IsAutoCorrectAutoApplyEnabledAsync();
+            AutoExpandEnabled = await _settings.IsAutoExpandEnabledAsync();
             AiApiKey = await _settings.GetAiApiKeyAsync();
             // The registry is the source of truth for auto-start.
             StartWithWindows = _startup.IsEnabled();

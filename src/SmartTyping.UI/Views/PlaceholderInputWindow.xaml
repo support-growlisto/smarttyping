@@ -5,7 +5,8 @@
         Title="{Binding [Input_Title], Source={x:Static loc:LocalizationManager.Instance}}"
         SizeToContent="Height" Width="380" MaxHeight="520"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
-        ShowInTaskbar="False" FontFamily="Segoe UI" FontSize="13">
+        ShowInTaskbar="False" FontFamily="Segoe UI" FontSize="13"
+        Background="{DynamicResource Brush.Window}" Foreground="{DynamicResource Brush.Foreground}">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

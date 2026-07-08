@@ -5,7 +5,8 @@
         Title="{Binding Title}" Height="480" Width="480"
         WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
         MinHeight="420" MinWidth="440"
-        FontFamily="Segoe UI" FontSize="13">
+        FontFamily="Segoe UI" FontSize="13"
+        Background="{DynamicResource Brush.Window}" Foreground="{DynamicResource Brush.Foreground}">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

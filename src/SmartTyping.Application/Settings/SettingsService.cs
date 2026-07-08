@@ -59,6 +59,13 @@ public sealed class SettingsService
     public Task SetAutoCorrectAutoApplyEnabledAsync(bool enabled) =>
         SetBoolAsync(SettingKeys.AutoCorrectAuto, enabled);
 
+    /// <summary>Automatic snippet expansion as you type (no hotkey). Off by default.</summary>
+    public Task<bool> IsAutoExpandEnabledAsync() =>
+        GetBoolAsync(SettingKeys.AutoExpandSnippets, defaultValue: false);
+
+    public Task SetAutoExpandEnabledAsync(bool enabled) =>
+        SetBoolAsync(SettingKeys.AutoExpandSnippets, enabled);
+
     /// <summary>The AI provider id (e.g. "gemini"). Defaults to Gemini.</summary>
     public async Task<string> GetAiProviderAsync()
     {

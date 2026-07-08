@@ -19,6 +19,7 @@ public static class SettingKeys
     public const string CheckForUpdates = "CheckForUpdates";
     public const string AutoCorrectSuggest = "AutoCorrectSuggest";
     public const string AutoCorrectAuto = "AutoCorrectAuto";
+    public const string AutoExpandSnippets = "AutoExpandSnippets";
     public const string HotkeyAiImprove = "HotkeyAiImprove";
     public const string AiProvider = "AiProvider";
     public const string AiApiKey = "AiApiKey";

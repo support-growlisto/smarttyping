@@ -55,9 +55,13 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
     public event EventHandler<LayoutSuggestion>? LayoutAutoCorrectRequested;
 
+    public event EventHandler<WordBoundary>? SnippetWordCompleted;
+
     public bool SuggestionsEnabled { get; set; }
 
     public bool AutoApplySuggestions { get; set; }
+
+    public bool AutoExpandEnabled { get; set; }
 
     public void UpdateBindings(IReadOnlyDictionary<HotkeyAction, Hotkey> bindings) => _bindings = bindings;
 
@@ -109,8 +113,9 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                     }
                 }
 
-                // Track plain typing for the non-destructive layout suggestion (no Ctrl/Alt/Win).
-                if (SuggestionsEnabled && !matched &&
+                // Track plain typing for as-you-type features (layout hint / auto-expand). Only when a
+                // feature is on and no command modifier is held.
+                if ((SuggestionsEnabled || AutoExpandEnabled) && !matched &&
                     (mods & (HotkeyModifiers.Ctrl | HotkeyModifiers.Alt | HotkeyModifiers.Win)) == 0)
                 {
                     UpdateWordBuffer(vk);
@@ -141,7 +146,9 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             case NativeMethods.VK_SPACE:
             case NativeMethods.VK_RETURN:
             case NativeMethods.VK_TAB:
-                EvaluateWord(atSpace: vk == NativeMethods.VK_SPACE);
+                var completed = _wordBuffer.ToString();
+                RaiseSnippetWordCompleted(completed, vk);
+                EvaluateWord(completed, atSpace: vk == NativeMethods.VK_SPACE);
                 _wordBuffer.Clear();
                 return;
             case NativeMethods.VK_BACK:
@@ -163,10 +170,40 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
     }
 
-    private void EvaluateWord(bool atSpace)
+    // Raise the auto-expand probe for the finished word (the coordinator decides if it's a trigger).
+    private void RaiseSnippetWordCompleted(string word, int boundaryVk)
     {
-        var word = _wordBuffer.ToString();
-        if (word.Length < 2 || word == _lastSuggestedWord)
+        if (!AutoExpandEnabled || word.Length < 2)
+        {
+            return;
+        }
+
+        var handler = SnippetWordCompleted;
+        if (handler is null)
+        {
+            return;
+        }
+
+        // Only single-character delimiters (space / tab). Enter is skipped because the newline it
+        // inserts is 1 or 2 characters depending on the app, so we can't reliably count backspaces.
+        var boundary = boundaryVk switch
+        {
+            NativeMethods.VK_TAB => "\t",
+            NativeMethods.VK_SPACE => " ",
+            _ => null
+        };
+        if (boundary is null)
+        {
+            return;
+        }
+
+        var payload = new WordBoundary(word, boundary);
+        ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
+    }
+
+    private void EvaluateWord(string word, bool atSpace)
+    {
+        if (!SuggestionsEnabled || word.Length < 2 || word == _lastSuggestedWord)
         {
             return;
         }
