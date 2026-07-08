@@ -11,19 +11,24 @@ namespace SmartTyping.Application.Templates;
 ///   <item><c>{time}</c>, <c>{time:FORMAT}</c> — time, optional .NET format.</item>
 ///   <item><c>{clipboard}</c> — current clipboard text.</item>
 ///   <item><c>{cursor}</c> — marks where the caret should land after insertion (produces no text).</item>
+///   <item><c>{input:Label}</c> — prompts the user for a value on expansion (same label = one prompt).</item>
 /// </list>
 /// Unknown or malformed tokens are left intact, so content is never lost and new variables can be
 /// added without breaking existing snippets.
 /// </summary>
 public sealed class TemplateEngine : ITemplateEngine
 {
+    private const string InputPrefix = "input:";
+
     private readonly IDateTimeProvider _clock;
     private readonly IClipboardService _clipboard;
+    private readonly IPlaceholderPrompt? _placeholderPrompt;
 
-    public TemplateEngine(IDateTimeProvider clock, IClipboardService clipboard)
+    public TemplateEngine(IDateTimeProvider clock, IClipboardService clipboard, IPlaceholderPrompt? placeholderPrompt = null)
     {
         _clock = clock;
         _clipboard = clipboard;
+        _placeholderPrompt = placeholderPrompt;
     }
 
     public async Task<RenderedTemplate> RenderAsync(string content)
@@ -31,6 +36,20 @@ public sealed class TemplateEngine : ITemplateEngine
         if (string.IsNullOrEmpty(content) || !content.Contains('{'))
         {
             return RenderedTemplate.Plain(content);
+        }
+
+        // Resolve {input:…} placeholders up front (one prompt for all fields). A cancel aborts.
+        var labels = CollectInputLabels(content);
+        IReadOnlyDictionary<string, string> inputs = EmptyInputs;
+        if (labels.Count > 0 && _placeholderPrompt is not null)
+        {
+            var values = await _placeholderPrompt.RequestAsync(labels);
+            if (values is null)
+            {
+                return RenderedTemplate.CancelledResult();
+            }
+
+            inputs = values;
         }
 
         string? clipboardText = null; // resolved lazily, once
@@ -58,7 +77,11 @@ public sealed class TemplateEngine : ITemplateEngine
             var token = content.Substring(i + 1, close - i - 1);
             var raw = content.Substring(i, close - i + 1); // the original "{...}" including braces
 
-            if (TryResolveToken(token, ref clipboardText, result.Length, out var replacement, out var isCursor))
+            if (TryResolveInput(token, inputs, out var inputValue))
+            {
+                result.Append(inputValue);
+            }
+            else if (TryResolveToken(token, out var replacement, out var isCursor))
             {
                 if (isCursor)
                 {
@@ -87,14 +110,66 @@ public sealed class TemplateEngine : ITemplateEngine
         return new RenderedTemplate(result.ToString(), cursorOffset);
     }
 
+    private static readonly IReadOnlyDictionary<string, string> EmptyInputs =
+        new Dictionary<string, string>();
+
+    /// <summary>Extracts the ordered, de-duplicated <c>{input:Label}</c> labels from the content.</summary>
+    private static IReadOnlyList<string> CollectInputLabels(string content)
+    {
+        var labels = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        var i = 0;
+        while (i < content.Length)
+        {
+            if (content[i] != '{')
+            {
+                i++;
+                continue;
+            }
+
+            var close = content.IndexOf('}', i + 1);
+            if (close < 0)
+            {
+                break;
+            }
+
+            var token = content.Substring(i + 1, close - i - 1).Trim();
+            if (token.StartsWith(InputPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var label = token[InputPrefix.Length..].Trim();
+                if (label.Length > 0 && seen.Add(label))
+                {
+                    labels.Add(label);
+                }
+            }
+
+            i = close + 1;
+        }
+
+        return labels;
+    }
+
+    private static bool TryResolveInput(string token, IReadOnlyDictionary<string, string> inputs, out string value)
+    {
+        value = string.Empty;
+        var trimmed = token.Trim();
+        if (!trimmed.StartsWith(InputPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var label = trimmed[InputPrefix.Length..].Trim();
+        value = inputs.TryGetValue(label, out var v) ? v : string.Empty;
+        return true;
+    }
+
     /// <summary>
     /// Resolves a single token. Returns false for unknown/malformed tokens (caller keeps them verbatim).
     /// A null <paramref name="replacement"/> with a true return means "clipboard" (resolved by the caller).
     /// </summary>
-    private bool TryResolveToken(string token, ref string? clipboardText, int currentLength, out string? replacement, out bool isCursor)
+    private bool TryResolveToken(string token, out string? replacement, out bool isCursor)
     {
-        _ = clipboardText;
-        _ = currentLength;
         replacement = string.Empty;
         isCursor = false;
 

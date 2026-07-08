@@ -14,6 +14,12 @@ public sealed class TemplateEngineTests
         return new TemplateEngine(clock, new FakeClipboardService(clipboard));
     }
 
+    private static TemplateEngine CreateEngineWithPrompt(FakePlaceholderPrompt prompt)
+    {
+        var clock = new FakeDateTimeProvider(FixedNow, FixedNow.ToUniversalTime());
+        return new TemplateEngine(clock, new FakeClipboardService(), prompt);
+    }
+
     [Fact] // TE-1
     public async Task Render_DateToken_ReplacedWithShortDate()
     {
@@ -115,5 +121,55 @@ public sealed class TemplateEngineTests
         var result = await CreateEngine().RenderAsync("a{cursor}b{cursor}c");
         Assert.Equal("abc", result.Text);
         Assert.Equal(1, result.CursorOffset);
+    }
+
+    [Fact]
+    public async Task Render_InputPlaceholder_SubstitutesPromptedValue()
+    {
+        var prompt = new FakePlaceholderPrompt(new Dictionary<string, string> { ["Name"] = "Alice" });
+        var result = await CreateEngineWithPrompt(prompt).RenderAsync("Hi {input:Name}!");
+
+        Assert.Equal("Hi Alice!", result.Text);
+        Assert.False(result.Cancelled);
+    }
+
+    [Fact]
+    public async Task Render_SameInputLabel_PromptedOnce()
+    {
+        var prompt = new FakePlaceholderPrompt(new Dictionary<string, string> { ["Name"] = "Bob" });
+        var result = await CreateEngineWithPrompt(prompt).RenderAsync("{input:Name} + {input:Name}");
+
+        Assert.Equal("Bob + Bob", result.Text);
+        Assert.NotNull(prompt.LastLabels);
+        Assert.Single(prompt.LastLabels!);
+    }
+
+    [Fact]
+    public async Task Render_MultipleInputs_CollectedInOrder()
+    {
+        var prompt = new FakePlaceholderPrompt(new Dictionary<string, string> { ["First"] = "a", ["Second"] = "b" });
+        var result = await CreateEngineWithPrompt(prompt).RenderAsync("{input:First}-{input:Second}");
+
+        Assert.Equal("a-b", result.Text);
+        Assert.Equal(new[] { "First", "Second" }, prompt.LastLabels);
+    }
+
+    [Fact]
+    public async Task Render_InputCancelled_ReturnsCancelled()
+    {
+        var prompt = new FakePlaceholderPrompt(values: null); // simulate cancel
+        var result = await CreateEngineWithPrompt(prompt).RenderAsync("Hi {input:Name}!");
+
+        Assert.True(result.Cancelled);
+    }
+
+    [Fact]
+    public async Task Render_InputWithNoPrompt_LeftEmpty()
+    {
+        // No prompt provider (e.g. tests / headless) → input tokens resolve to empty, never cancel.
+        var result = await CreateEngine().RenderAsync("Hi {input:Name}!");
+
+        Assert.Equal("Hi !", result.Text);
+        Assert.False(result.Cancelled);
     }
 }

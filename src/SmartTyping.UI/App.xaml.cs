@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SmartTyping.Application;
+using SmartTyping.Application.Abstractions;
 using SmartTyping.Application.Settings;
 using SmartTyping.Infrastructure;
 using SmartTyping.Infrastructure.Persistence;
@@ -51,6 +52,7 @@ public partial class App : System.Windows.Application
 
         // UI-layer services.
         services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<IPlaceholderPrompt, PlaceholderPromptService>();
         services.AddSingleton<TrayIconService>();
         services.AddSingleton<LanguageHotkeyCoordinator>();
         services.AddSingleton<SnippetExpansionCoordinator>();

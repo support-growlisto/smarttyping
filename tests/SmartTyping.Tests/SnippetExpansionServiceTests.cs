@@ -95,4 +95,20 @@ public sealed class SnippetExpansionServiceTests
         var result = await service.TryExpandAsync("   ");
         Assert.False(result.Matched);
     }
+
+    [Fact]
+    public async Task TryExpand_InputPromptCancelled_MissesAndDoesNotRecordUsage()
+    {
+        var repo = new FakeSnippetRepository();
+        repo.Seed("/email", "Hi {input:Name}");
+        var clock = new FakeDateTimeProvider(FixedNow, FixedNow.ToUniversalTime());
+        var cancelling = new FakePlaceholderPrompt(values: null);
+        var templateEngine = new TemplateEngine(clock, new FakeClipboardService(), cancelling);
+        var service = new SnippetExpansionService(repo, templateEngine, clock);
+
+        var result = await service.TryExpandAsync("/email");
+
+        Assert.False(result.Matched);
+        Assert.Equal(0, repo.RegisterUsageCallCount);
+    }
 }

@@ -36,8 +36,8 @@ internal static class Strings
             ["Edit_Enabled"] = ("Enabled", "เปิดใช้งาน"),
             ["Edit_Content"] = ("Content:", "เนื้อหา:"),
             ["Edit_Variables"] = (
-                "Variables: {date}  {date:yyyy-MM-dd}  {date+7}  {time}  {clipboard}  {cursor}",
-                "ตัวแปร: {date}  {date:yyyy-MM-dd}  {date+7}  {time}  {clipboard}  {cursor}"),
+                "Variables: {date}  {date:yyyy-MM-dd}  {date+7}  {time}  {clipboard}  {cursor}  {input:Label}",
+                "ตัวแปร: {date}  {date:yyyy-MM-dd}  {date+7}  {time}  {clipboard}  {cursor}  {input:ป้าย}"),
             ["Edit_Preview"] = ("Preview ▶", "ทดลอง ▶"),
             ["Edit_Cancel"] = ("Cancel", "ยกเลิก"),
             ["Edit_Save"] = ("Save", "บันทึก"),
@@ -76,6 +76,10 @@ internal static class Strings
 
             // Quick-picker
             ["Picker_Hint"] = ("↑↓ navigate · Enter insert · Esc cancel", "↑↓ เลื่อน · Enter แทรก · Esc ยกเลิก"),
+
+            // Placeholder input
+            ["Input_Title"] = ("Fill in the details", "กรอกข้อมูล"),
+            ["Input_Insert"] = ("Insert", "แทรก"),
 
             // Tray
             ["Tray_Show"] = ("Show manager", "เปิดหน้าจัดการ"),

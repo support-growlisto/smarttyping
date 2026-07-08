@@ -42,6 +42,7 @@ SmartTyping Desktop is a local Windows app that helps bilingual Thai/English use
 - FR-10a `{date:FORMAT}` / `{time:FORMAT}` → custom .NET formats (invariant/Gregorian, e.g. `{date:yyyy-MM-dd}`).
 - FR-10b `{date+N}` / `{date-N}` → date offset by N days (optionally combined with a format).
 - FR-10c `{cursor}` → marks the caret position after insertion.
+- FR-10d `{input:Label}` → prompts the user for a value on expansion (same label prompted once; cancel aborts).
 - FR-11 Unknown `{...}` tokens are left intact (no crash, no data loss).
 - FR-12 Snippets can be exported to and imported from a JSON file (skip or overwrite on trigger conflict).
 

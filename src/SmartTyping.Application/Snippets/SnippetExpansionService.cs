@@ -40,6 +40,13 @@ public sealed class SnippetExpansionService
         }
 
         var rendered = await _templateEngine.RenderAsync(snippet.Content);
+
+        // The user cancelled an {input:…} prompt — don't insert anything or count usage.
+        if (rendered.Cancelled)
+        {
+            return ExpansionResult.Miss();
+        }
+
         await _snippets.RegisterUsageAsync(snippet.Id, _clock.UtcNow);
 
         return ExpansionResult.Hit(snippet.Id, rendered.Text, rendered.CursorOffset);

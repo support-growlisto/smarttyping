@@ -16,7 +16,7 @@ A living view of where SmartTyping Desktop is headed. Order is by priority, not 
 
 - Configurable hotkeys (rebind the conversion/expansion keys).
 - ~~Start with Windows (registry/Startup entry, user opt-in)~~ — **done** (v0.1).
-- User-input placeholders in templates (`{input:Label}` prompts a small dialog).
+- ~~User-input placeholders in templates (`{input:Label}` prompts a small dialog)~~ — **done** (v0.1).
 - ~~Import/export snippets (JSON)~~ — **done** (v0.1): skip/overwrite conflict handling, category recreation.
 - ~~Preview / test-expand and richer template variables (`{date:fmt}`, `{date+N}`, `{cursor}`)~~ — **done** (v0.1).
 - ~~Convert the *last typed word* without a selection~~ — **done** (v0.1): auto-selects the previous word.
