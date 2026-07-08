@@ -49,11 +49,16 @@ internal static class Strings
             ["Settings_Features"] = ("Features", "ฟีเจอร์"),
             ["Settings_ExpansionEnabled"] = ("Enable snippet expansion", "เปิดการขยาย snippet"),
             ["Settings_CorrectionEnabled"] = ("Enable language correction", "เปิดการแก้ภาษา"),
+            ["Settings_AutoCorrectSuggest"] = ("Suggest layout fixes as I type", "แนะนำการแก้เลย์เอาต์ขณะพิมพ์"),
+            ["Settings_AutoCorrectSuggestHint"] = (
+                "Shows a tray hint when a word looks like wrong-layout text. Never replaces anything — press the convert hotkey to apply.",
+                "แสดงคำแนะนำใน tray เมื่อคำที่พิมพ์ดูเหมือนพิมพ์ผิดเลย์เอาต์ ไม่แทนที่ให้เอง— กดคีย์ลัดแปลงภาษาเพื่อแก้"),
             ["Settings_Hotkeys"] = ("Hotkeys", "คีย์ลัด"),
             ["Settings_ConvertLayout"] = ("Convert layout", "แปลงภาษา"),
             ["Settings_ExpandSnippet"] = ("Expand snippet", "ขยาย snippet"),
             ["Settings_Picker"] = ("Quick-picker", "ค้นหา snippet"),
             ["Settings_Capture"] = ("Add from selection", "เพิ่มจากที่เลือก"),
+            ["Settings_AiImprove"] = ("AI improve selection", "ปรับข้อความด้วย AI"),
             ["Settings_Change"] = ("Change", "เปลี่ยน"),
             ["Hotkey_Prompt"] = ("Press a key combination…", "กดคีย์ผสมที่ต้องการ…"),
             ["Hotkey_Duplicate"] = ("That combination is already used by another action.", "คีย์นี้ถูกใช้กับคำสั่งอื่นแล้ว"),
@@ -73,6 +78,13 @@ internal static class Strings
             ["Update_UpToDate"] = ("You're up to date.", "เป็นเวอร์ชันล่าสุดแล้ว"),
             ["Update_Available"] = ("Update available: v{0}", "มีอัปเดต: v{0}"),
             ["Update_AvailablePrompt"] = ("Version {0} is available. Open the download page?", "มีเวอร์ชัน {0} แล้ว เปิดหน้าดาวน์โหลดไหม?"),
+
+            // AI (opt-in, brings your own key)
+            ["Settings_Ai"] = ("AI (optional)", "AI (ไม่บังคับ)"),
+            ["Settings_AiHint"] = (
+                "Improve the selected text with AI. Paste a free Google Gemini API key to enable, then select text and press the AI-improve hotkey. Text is sent to Google only when you use it.",
+                "ปรับข้อความที่เลือกด้วย AI วางคีย์ Google Gemini API (ฟรี) เพื่อเปิดใช้ จากนั้นเลือกข้อความแล้วกดคีย์ลัดปรับข้อความ ระบบจะส่งข้อความไป Google เฉพาะตอนที่คุณสั่งเท่านั้น"),
+            ["Settings_AiApiKey"] = ("Gemini API key:", "คีย์ Gemini API:"),
 
             // Onboarding
             ["Onb_Title"] = ("Welcome to SmartTyping", "ยินดีต้อนรับสู่ SmartTyping"),
@@ -131,6 +143,13 @@ internal static class Strings
             ["Tray_Exit"] = ("Exit", "ออก"),
             ["Tray_Converted"] = ("Converted", "แปลงแล้ว"),
             ["Tray_Expanded"] = ("Expanded", "ขยายแล้ว"),
+            ["Tray_Suggestion"] = ("Wrong layout?", "พิมพ์ผิดเลย์เอาต์?"),
+            ["Tray_SuggestionBody"] = ("‘{0}’ → ‘{1}’ · press the convert hotkey", "‘{0}’ → ‘{1}’ · กดคีย์ลัดแปลงภาษา"),
+            ["Tray_AiImproved"] = ("AI improved", "AI ปรับข้อความแล้ว"),
+            ["Tray_AiWorking_Title"] = ("AI", "AI"),
+            ["Tray_AiWorking"] = ("Improving…", "กำลังปรับข้อความ…"),
+            ["Tray_AiNotConfigured_Title"] = ("AI not set up", "ยังไม่ได้ตั้งค่า AI"),
+            ["Tray_AiNotConfigured"] = ("Add a Gemini API key in Settings first.", "เพิ่มคีย์ Gemini API ในหน้าตั้งค่าก่อน"),
 
             // Status messages (formatted)
             ["Status_Loaded"] = ("{0} snippet(s) loaded.", "โหลด {0} snippet แล้ว"),

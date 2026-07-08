@@ -28,6 +28,10 @@ public partial class App : System.Windows.Application
     private SnippetExpansionCoordinator? _expansion;
     private QuickPickerCoordinator? _picker;
     private CaptureSnippetCoordinator? _capture;
+    private AiImproveCoordinator? _aiImprove;
+
+    // Throttle the as-you-type suggestion balloon so it can't spam the tray.
+    private int _lastSuggestionTick;
 
     /// <summary>True once the user has chosen to exit, so the main window stops hiding-to-tray.</summary>
     public static bool IsShuttingDown { get; private set; }
@@ -59,6 +63,7 @@ public partial class App : System.Windows.Application
         services.AddSingleton<SnippetExpansionCoordinator>();
         services.AddSingleton<QuickPickerCoordinator>();
         services.AddSingleton<CaptureSnippetCoordinator>();
+        services.AddSingleton<AiImproveCoordinator>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
@@ -91,8 +96,9 @@ public partial class App : System.Windows.Application
             var settings = _services.GetRequiredService<SettingsService>();
             Localization.LocalizationManager.Instance.SetLanguage(settings.GetLanguageAsync().GetAwaiter().GetResult());
             Themes.ThemeManager.Apply(settings.GetThemeAsync().GetAwaiter().GetResult());
-            _services.GetRequiredService<IKeyboardHook>()
-                .UpdateBindings(settings.GetHotkeysAsync().GetAwaiter().GetResult());
+            var hook = _services.GetRequiredService<IKeyboardHook>();
+            hook.UpdateBindings(settings.GetHotkeysAsync().GetAwaiter().GetResult());
+            hook.SuggestionsEnabled = settings.IsAutoCorrectSuggestEnabledAsync().GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -125,6 +131,21 @@ public partial class App : System.Windows.Application
 
         _capture = _services.GetRequiredService<CaptureSnippetCoordinator>();
         _capture.Start();
+
+        // AI improve (opt-in; does nothing unless the user set an API key).
+        _aiImprove = _services.GetRequiredService<AiImproveCoordinator>();
+        _aiImprove.Improved += (_, text) =>
+            Dispatcher.Invoke(() => _tray?.ShowBalloon(Localization.LocalizationManager.Instance["Tray_AiImproved"], Preview(text)));
+        _aiImprove.Working += (_, _) =>
+            Dispatcher.Invoke(() => _tray?.ShowBalloon(Localization.LocalizationManager.Instance["Tray_AiWorking_Title"],
+                Localization.LocalizationManager.Instance["Tray_AiWorking"]));
+        _aiImprove.NotConfigured += (_, _) =>
+            Dispatcher.Invoke(() => _tray?.ShowBalloon(Localization.LocalizationManager.Instance["Tray_AiNotConfigured_Title"],
+                Localization.LocalizationManager.Instance["Tray_AiNotConfigured"]));
+        _aiImprove.Start();
+
+        // Non-destructive as-you-type layout hint (only fires when the user enabled it).
+        _services.GetRequiredService<IKeyboardHook>().LayoutSuggestionRaised += OnLayoutSuggestionRaised;
 
         // Surface the window when a second launch signals us.
         _singleInstance.StartListening(() => Dispatcher.Invoke(ShowMainWindow));
@@ -218,6 +239,7 @@ public partial class App : System.Windows.Application
         _expansion?.Stop();
         _picker?.Stop();
         _capture?.Stop();
+        _aiImprove?.Stop();
         _tray?.Dispose();
         Shutdown(0);
     }
@@ -228,10 +250,26 @@ public partial class App : System.Windows.Application
         _expansion?.Dispose();
         _picker?.Dispose();
         _capture?.Dispose();
+        _aiImprove?.Dispose();
         _tray?.Dispose();
         _singleInstance?.Dispose();
         _services?.Dispose();
         base.OnExit(e);
+    }
+
+    private void OnLayoutSuggestionRaised(object? sender, Application.Language.LayoutSuggestion suggestion)
+    {
+        // Throttle: at most one hint per ~4 seconds, regardless of typing speed.
+        var now = Environment.TickCount;
+        if (unchecked(now - _lastSuggestionTick) < 4000)
+        {
+            return;
+        }
+        _lastSuggestionTick = now;
+
+        var loc = Localization.LocalizationManager.Instance;
+        Dispatcher.Invoke(() => _tray?.ShowBalloon(loc["Tray_Suggestion"],
+            loc.Format("Tray_SuggestionBody", suggestion.Original, suggestion.Suggestion)));
     }
 
     private static string Preview(string text)

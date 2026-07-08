@@ -53,6 +53,8 @@ public sealed class SettingsViewModel : ObservableObject
 
     private bool _snippetExpansionEnabled = true;
     private bool _languageCorrectionEnabled = true;
+    private bool _autoCorrectSuggestEnabled;
+    private string _aiApiKey = string.Empty;
     private bool _startWithWindows;
     private bool _checkForUpdates;
     private string _updateStatus = string.Empty;
@@ -83,7 +85,8 @@ public sealed class SettingsViewModel : ObservableObject
             NewRow(HotkeyAction.Convert, loc["Settings_ConvertLayout"]),
             NewRow(HotkeyAction.Expand, loc["Settings_ExpandSnippet"]),
             NewRow(HotkeyAction.Picker, loc["Settings_Picker"]),
-            NewRow(HotkeyAction.Capture, loc["Settings_Capture"])
+            NewRow(HotkeyAction.Capture, loc["Settings_Capture"]),
+            NewRow(HotkeyAction.AiImprove, loc["Settings_AiImprove"])
         };
         RefreshHotkeyRows();
     }
@@ -191,6 +194,35 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    public bool AutoCorrectSuggestEnabled
+    {
+        get => _autoCorrectSuggestEnabled;
+        set
+        {
+            if (SetProperty(ref _autoCorrectSuggestEnabled, value))
+            {
+                // Live-toggle the hook so the change takes effect without a restart.
+                _hook.SuggestionsEnabled = value;
+                if (!_loading)
+                {
+                    _ = _settings.SetAutoCorrectSuggestEnabledAsync(value);
+                }
+            }
+        }
+    }
+
+    public string AiApiKey
+    {
+        get => _aiApiKey;
+        set
+        {
+            if (SetProperty(ref _aiApiKey, value) && !_loading)
+            {
+                _ = _settings.SetAiApiKeyAsync(value?.Trim() ?? string.Empty);
+            }
+        }
+    }
+
     public bool StartWithWindows
     {
         get => _startWithWindows;
@@ -257,6 +289,8 @@ public sealed class SettingsViewModel : ObservableObject
         {
             SnippetExpansionEnabled = await _settings.IsSnippetExpansionEnabledAsync();
             LanguageCorrectionEnabled = await _settings.IsLanguageCorrectionEnabledAsync();
+            AutoCorrectSuggestEnabled = await _settings.IsAutoCorrectSuggestEnabledAsync();
+            AiApiKey = await _settings.GetAiApiKeyAsync();
             // The registry is the source of truth for auto-start.
             StartWithWindows = _startup.IsEnabled();
             CheckForUpdates = await _settings.IsUpdateCheckEnabledAsync();

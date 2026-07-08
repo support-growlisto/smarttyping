@@ -26,6 +26,21 @@ internal static class NativeMethods
     public const int VK_SPACE = 0x20;
     public const int VK_N = 0x4E;
 
+    // Keys used by the as-you-type layout-suggestion word buffer.
+    public const int VK_BACK = 0x08;
+    public const int VK_RETURN = 0x0D;
+    public const int VK_TAB = 0x09;
+    public const int VK_OEM_1 = 0xBA;      // ;
+    public const int VK_OEM_2 = 0xBF;      // /
+    public const int VK_OEM_4 = 0xDB;      // [
+    public const int VK_OEM_5 = 0xDC;      // \
+    public const int VK_OEM_6 = 0xDD;      // ]
+    public const int VK_OEM_7 = 0xDE;      // '
+    public const int VK_OEM_COMMA = 0xBC;  // ,
+    public const int VK_OEM_PERIOD = 0xBE; // .
+
+    public const int LANG_THAI = 0x1E;
+
     public const uint INPUT_KEYBOARD = 1;
     public const uint KEYEVENTF_KEYUP = 0x0002;
 
@@ -116,6 +131,18 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetKeyboardLayout(uint idThread);
+
+    /// <summary>True if the foreground window's active keyboard layout is Thai.</summary>
+    public static bool ForegroundLayoutIsThai()
+    {
+        var fg = GetForegroundWindow();
+        var thread = GetWindowThreadProcessId(fg, out _);
+        var layout = GetKeyboardLayout(thread).ToInt64();
+        return (layout & 0x3FF) == LANG_THAI;
+    }
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);

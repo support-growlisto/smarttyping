@@ -2,6 +2,7 @@ using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SmartTyping.Application.Abstractions;
+using SmartTyping.Infrastructure.Ai;
 using SmartTyping.Infrastructure.Input;
 using SmartTyping.Infrastructure.Update;
 using SmartTyping.Infrastructure.Logging;
@@ -60,6 +61,9 @@ public static class DependencyInjection
             return http;
         });
         services.AddSingleton<IUpdateService, WindowsUpdateChecker>();
+
+        // AI (opt-in, network, user-supplied key).
+        services.AddSingleton<IAiService, GeminiAiService>();
 
         return services;
     }

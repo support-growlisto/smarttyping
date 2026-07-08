@@ -73,8 +73,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Open logs** — tray menu and Settings button open the log folder for support/diagnostics.
 - **winget packaging** — `packaging/winget/` contains portable manifests + a release guide so the app can be published for `winget install SmartTyping.SmartTyping` (fill the release URL/hash before submitting).
 
+### AI & as-you-type suggestions (opt-in, off by default)
+- **As-you-type layout hint** — when enabled in Settings, SmartTyping watches the word you're typing and, if it looks like wrong-layout Thai text (e.g. `l;ylfu`), shows a **non-destructive tray hint** suggesting the fix. It never rewrites your keystrokes — you still press the convert hotkey to apply. The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Throttled to at most one hint every few seconds. Off unless you turn it on.
+- **AI improve selection** (Ctrl+Shift+I, rebindable) — select text and press the hotkey to have an AI clean up spelling/grammar while keeping the same language and meaning, replacing the selection in place. Provider-agnostic behind an `IAiService` port; ships with a **Google Gemini** (free-tier) implementation. **Bring your own API key** — paste it in Settings; with no key the feature is inert. Text is sent to the provider **only** when you invoke it, never automatically, and password fields are skipped. Failures are logged and swallowed (no replacement on error).
+
 ### Notes
-- Automatic (as-you-type) correction, AI features, cloud sync, and the plugin system are intentionally **not** implemented in the MVP. See `docs/09_Roadmap.md`.
+- Cloud sync and the plugin system are intentionally **not** implemented in the MVP. See `docs/09_Roadmap.md`.
 - `{input:Label}` (interactive placeholder prompts) is scaffolded conceptually but deferred — unknown tokens are preserved verbatim, so it's a non-breaking addition later.
 
 [Unreleased]: https://example.com/smarttyping/tree/main

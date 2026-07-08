@@ -45,6 +45,30 @@ public sealed class SettingsService
     public Task SetUpdateCheckEnabledAsync(bool enabled) =>
         SetBoolAsync(SettingKeys.CheckForUpdates, enabled);
 
+    /// <summary>As-you-type layout suggestions (non-destructive hints). Off by default.</summary>
+    public Task<bool> IsAutoCorrectSuggestEnabledAsync() =>
+        GetBoolAsync(SettingKeys.AutoCorrectSuggest, defaultValue: false);
+
+    public Task SetAutoCorrectSuggestEnabledAsync(bool enabled) =>
+        SetBoolAsync(SettingKeys.AutoCorrectSuggest, enabled);
+
+    /// <summary>The AI provider id (e.g. "gemini"). Defaults to Gemini.</summary>
+    public async Task<string> GetAiProviderAsync()
+    {
+        var value = await _repository.GetAsync(SettingKeys.AiProvider);
+        return string.IsNullOrWhiteSpace(value) ? "gemini" : value.Trim();
+    }
+
+    public Task SetAiProviderAsync(string provider) =>
+        _repository.SetAsync(SettingKeys.AiProvider, provider);
+
+    /// <summary>The user's AI API key (empty when unset). Enables the AI feature when present.</summary>
+    public async Task<string> GetAiApiKeyAsync() =>
+        await _repository.GetAsync(SettingKeys.AiApiKey) ?? string.Empty;
+
+    public Task SetAiApiKeyAsync(string key) =>
+        _repository.SetAsync(SettingKeys.AiApiKey, key);
+
     /// <summary>The UI language code (e.g. "th", "en"). Defaults to Thai.</summary>
     public async Task<string> GetLanguageAsync()
     {
@@ -72,7 +96,8 @@ public sealed class SettingsService
             [HotkeyAction.Convert] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x4C), // L
             [HotkeyAction.Expand] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x45),  // E
             [HotkeyAction.Picker] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x20),  // Space
-            [HotkeyAction.Capture] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x4E)  // N
+            [HotkeyAction.Capture] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x4E), // N
+            [HotkeyAction.AiImprove] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x49) // I
         };
 
     /// <summary>Returns the effective hotkey for each action (saved value or the default).</summary>
@@ -100,7 +125,8 @@ public sealed class SettingsService
             [HotkeyAction.Convert] = SettingKeys.HotkeyConvert,
             [HotkeyAction.Expand] = SettingKeys.HotkeyExpand,
             [HotkeyAction.Picker] = SettingKeys.HotkeyPicker,
-            [HotkeyAction.Capture] = SettingKeys.HotkeyCapture
+            [HotkeyAction.Capture] = SettingKeys.HotkeyCapture,
+            [HotkeyAction.AiImprove] = SettingKeys.HotkeyAiImprove
         };
 
     private async Task<bool> GetBoolAsync(string key, bool defaultValue)

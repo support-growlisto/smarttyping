@@ -13,6 +13,11 @@
                   IsChecked="{Binding SnippetExpansionEnabled, Mode=TwoWay}" Margin="0,4" />
         <CheckBox Content="{Binding [Settings_CorrectionEnabled], Source={x:Static loc:LocalizationManager.Instance}}"
                   IsChecked="{Binding LanguageCorrectionEnabled, Mode=TwoWay}" Margin="0,4" />
+        <CheckBox Content="{Binding [Settings_AutoCorrectSuggest], Source={x:Static loc:LocalizationManager.Instance}}"
+                  IsChecked="{Binding AutoCorrectSuggestEnabled, Mode=TwoWay}" Margin="0,4" />
+        <TextBlock Text="{Binding [Settings_AutoCorrectSuggestHint], Source={x:Static loc:LocalizationManager.Instance}}"
+                   TextWrapping="Wrap" FontSize="11" Margin="24,0,0,0"
+                   Foreground="{DynamicResource Brush.SubtleForeground}" />
 
         <TextBlock Text="{Binding [Settings_Hotkeys], Source={x:Static loc:LocalizationManager.Instance}}"
                    FontWeight="SemiBold" Margin="0,16,0,4" />
@@ -60,6 +65,18 @@
                     Content="{Binding [Settings_CheckNow], Source={x:Static loc:LocalizationManager.Instance}}" />
             <TextBlock Text="{Binding UpdateStatus}" VerticalAlignment="Center" Margin="10,0,0,0"
                        Foreground="{DynamicResource Brush.SubtleForeground}" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding [Settings_Ai], Source={x:Static loc:LocalizationManager.Instance}}"
+                   FontWeight="SemiBold" Margin="0,16,0,4" />
+        <TextBlock Text="{Binding [Settings_AiHint], Source={x:Static loc:LocalizationManager.Instance}}"
+                   TextWrapping="Wrap" FontSize="11" Margin="0,0,0,6"
+                   Foreground="{DynamicResource Brush.SubtleForeground}" />
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{Binding [Settings_AiApiKey], Source={x:Static loc:LocalizationManager.Instance}}"
+                       Width="120" VerticalAlignment="Center" />
+            <TextBox Width="220" VerticalAlignment="Center"
+                     Text="{Binding AiApiKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">

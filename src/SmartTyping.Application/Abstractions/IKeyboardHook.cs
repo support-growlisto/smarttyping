@@ -19,6 +19,18 @@ public interface IKeyboardHook : IDisposable
     /// <summary>Raised when the capture-to-snippet hotkey (default Ctrl+Shift+N) is pressed.</summary>
     event EventHandler? CaptureHotkeyPressed;
 
+    /// <summary>Raised when the AI-improve hotkey (default Ctrl+Shift+I) is pressed.</summary>
+    event EventHandler? AiImproveHotkeyPressed;
+
+    /// <summary>
+    /// Raised when as-you-type suggestions are enabled and the last typed word looks like wrong-layout
+    /// text that could be converted. Purely a hint — nothing is replaced automatically.
+    /// </summary>
+    event EventHandler<Language.LayoutSuggestion>? LayoutSuggestionRaised;
+
+    /// <summary>Enables/disables the non-destructive as-you-type layout suggestions.</summary>
+    bool SuggestionsEnabled { get; set; }
+
     /// <summary>Replaces the hotkey bindings the hook matches against (applied live).</summary>
     void UpdateBindings(IReadOnlyDictionary<Domain.Enums.HotkeyAction, Domain.ValueObjects.Hotkey> bindings);
 

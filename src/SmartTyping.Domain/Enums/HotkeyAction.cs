@@ -13,5 +13,8 @@ public enum HotkeyAction
     Picker,
 
     /// <summary>Add a snippet from the current selection.</summary>
-    Capture
+    Capture,
+
+    /// <summary>Improve the selected text with AI.</summary>
+    AiImprove
 }

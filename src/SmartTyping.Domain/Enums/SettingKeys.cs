@@ -17,5 +17,9 @@ public static class SettingKeys
     public const string HotkeyPicker = "HotkeyPicker";
     public const string HotkeyCapture = "HotkeyCapture";
     public const string CheckForUpdates = "CheckForUpdates";
+    public const string AutoCorrectSuggest = "AutoCorrectSuggest";
+    public const string HotkeyAiImprove = "HotkeyAiImprove";
+    public const string AiProvider = "AiProvider";
+    public const string AiApiKey = "AiApiKey";
     public const string SchemaVersion = "SchemaVersion";
 }

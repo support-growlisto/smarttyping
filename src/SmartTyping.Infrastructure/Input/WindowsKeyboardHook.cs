@@ -1,5 +1,7 @@
+using System.Text;
 using Microsoft.Extensions.Logging;
 using SmartTyping.Application.Abstractions;
+using SmartTyping.Application.Language;
 using SmartTyping.Application.Settings;
 using SmartTyping.Domain.Enums;
 using SmartTyping.Domain.ValueObjects;
@@ -19,6 +21,7 @@ namespace SmartTyping.Infrastructure.Input;
 public sealed class WindowsKeyboardHook : IKeyboardHook
 {
     private readonly ILogger<WindowsKeyboardHook> _logger;
+    private readonly IKeyboardLayoutConverter _converter;
 
     // Keep the delegate alive for the lifetime of the hook (prevents GC of the callback).
     private readonly NativeMethods.LowLevelKeyboardProc _proc;
@@ -27,9 +30,14 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     // Current action→hotkey bindings (defaults until UpdateBindings is called). Volatile swap.
     private IReadOnlyDictionary<HotkeyAction, Hotkey> _bindings = SettingsService.DefaultHotkeys;
 
-    public WindowsKeyboardHook(ILogger<WindowsKeyboardHook> logger)
+    // As-you-type suggestion state (accessed only on the hook/UI thread).
+    private readonly StringBuilder _wordBuffer = new(48);
+    private string _lastSuggestedWord = string.Empty;
+
+    public WindowsKeyboardHook(ILogger<WindowsKeyboardHook> logger, IKeyboardLayoutConverter converter)
     {
         _logger = logger;
+        _converter = converter;
         _proc = HookCallback;
     }
 
@@ -40,6 +48,12 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     public event EventHandler? PickerHotkeyPressed;
 
     public event EventHandler? CaptureHotkeyPressed;
+
+    public event EventHandler? AiImproveHotkeyPressed;
+
+    public event EventHandler<LayoutSuggestion>? LayoutSuggestionRaised;
+
+    public bool SuggestionsEnabled { get; set; }
 
     public void UpdateBindings(IReadOnlyDictionary<HotkeyAction, Hotkey> bindings) => _bindings = bindings;
 
@@ -80,13 +94,22 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                 var vk = (int)info.vkCode;
                 var mods = CurrentModifiers();
 
+                var matched = false;
                 foreach (var (action, hotkey) in _bindings)
                 {
                     if (hotkey.VirtualKey == vk && hotkey.Modifiers == mods)
                     {
                         Raise(EventFor(action));
+                        matched = true;
                         break;
                     }
+                }
+
+                // Track plain typing for the non-destructive layout suggestion (no Ctrl/Alt/Win).
+                if (SuggestionsEnabled && !matched &&
+                    (mods & (HotkeyModifiers.Ctrl | HotkeyModifiers.Alt | HotkeyModifiers.Win)) == 0)
+                {
+                    UpdateWordBuffer(vk);
                 }
             }
         }
@@ -107,12 +130,87 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
     }
 
+    private void UpdateWordBuffer(int vk)
+    {
+        switch (vk)
+        {
+            case NativeMethods.VK_SPACE:
+            case NativeMethods.VK_RETURN:
+            case NativeMethods.VK_TAB:
+                EvaluateWord();
+                _wordBuffer.Clear();
+                return;
+            case NativeMethods.VK_BACK:
+                if (_wordBuffer.Length > 0)
+                {
+                    _wordBuffer.Length--;
+                }
+                return;
+        }
+
+        var c = VkToChar(vk);
+        if (c == '\0')
+        {
+            _wordBuffer.Clear(); // navigation / other keys break the current word
+        }
+        else if (_wordBuffer.Length < 48)
+        {
+            _wordBuffer.Append(c);
+        }
+    }
+
+    private void EvaluateWord()
+    {
+        var word = _wordBuffer.ToString();
+        if (word.Length < 2 || word == _lastSuggestedWord)
+        {
+            return;
+        }
+
+        // If the active layout is already Thai, what's on screen is Thai — nothing to suggest.
+        if (NativeMethods.ForegroundLayoutIsThai() || !WrongLayoutDetector.LooksLikeWrongLayoutThai(word))
+        {
+            return;
+        }
+
+        var suggestion = _converter.Convert(word, Domain.Enums.ConversionDirection.EnglishToThai);
+        if (string.Equals(suggestion, word, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _lastSuggestedWord = word;
+        var handler = LayoutSuggestionRaised;
+        if (handler is not null)
+        {
+            var payload = new LayoutSuggestion(word, suggestion);
+            ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
+        }
+    }
+
+    // Maps a virtual-key to the character it produces on a US-QWERTY layout (physical key), or '\0'.
+    private static char VkToChar(int vk) => vk switch
+    {
+        >= 0x41 and <= 0x5A => (char)(vk + 32), // A-Z -> a-z
+        >= 0x30 and <= 0x39 => (char)vk,        // 0-9
+        NativeMethods.VK_OEM_1 => ';',
+        NativeMethods.VK_OEM_2 => '/',
+        NativeMethods.VK_OEM_4 => '[',
+        NativeMethods.VK_OEM_5 => '\\',
+        NativeMethods.VK_OEM_6 => ']',
+        NativeMethods.VK_OEM_7 => '\'',
+        NativeMethods.VK_OEM_COMMA => ',',
+        NativeMethods.VK_OEM_PERIOD => '.',
+        _ => '\0'
+    };
+
     private EventHandler? EventFor(HotkeyAction action) => action switch
     {
         HotkeyAction.Convert => ConversionHotkeyPressed,
         HotkeyAction.Expand => ExpansionHotkeyPressed,
         HotkeyAction.Picker => PickerHotkeyPressed,
         HotkeyAction.Capture => CaptureHotkeyPressed,
+        HotkeyAction.AiImprove => AiImproveHotkeyPressed,
         _ => null
     };
 
