@@ -239,8 +239,86 @@
     </Style>
 
     <Style TargetType="{x:Type StatusBar}">
-        <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+        <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource Brush.SubtleForeground}" />
+    </Style>
+
+    <!-- ============ Elevated surfaces & navigation (redesign) ============ -->
+
+    <!-- Rounded "card" surface with a soft drop shadow, used to group content areas. -->
+    <Style x:Key="Card" TargetType="{x:Type Border}">
+        <Setter Property="Background" Value="{DynamicResource Brush.Window}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="2" Direction="270"
+                                  Color="{DynamicResource Color.Shadow}" Opacity="0.5" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Section label above a group (e.g. "หมวดหมู่"). -->
+    <Style x:Key="SectionHeader" TargetType="{x:Type TextBlock}">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.FaintForeground}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextOptions.TextFormattingMode" Value="Ideal" />
+    </Style>
+
+    <!-- Ghost / tertiary button: no border or fill until hovered. -->
+    <Style x:Key="GhostButton" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.SubtleForeground}" />
+        <Setter Property="Padding" Value="10,6" />
+    </Style>
+
+    <!-- Sidebar navigation item: pill shape with a left accent bar + tinted fill when selected. -->
+    <Style x:Key="NavItem" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Foreground}" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="Margin" Value="0,2" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="8"
+                            SnapsToDevicePixels="True">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="3" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="bar" Grid.Column="0" Width="3" CornerRadius="2" Margin="0,3"
+                                    Background="Transparent" />
+                            <ContentPresenter Grid.Column="1" Margin="{TemplateBinding Padding}"
+                                              VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.ControlHover}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.AccentSubtle}" />
+                            <Setter TargetName="bar" Property="Background" Value="{DynamicResource Brush.Accent}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Trigger "chip": a monospace pill used in the snippet grid's Trigger column. -->
+    <Style x:Key="TriggerChip" TargetType="{x:Type Border}">
+        <Setter Property="Background" Value="{DynamicResource Brush.ChipBg}" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
 </ResourceDictionary>

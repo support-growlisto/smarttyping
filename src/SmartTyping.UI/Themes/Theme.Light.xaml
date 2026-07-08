@@ -15,5 +15,9 @@
     <SolidColorBrush x:Key="Brush.Accent"           Color="#FF5B5BF0" />
     <SolidColorBrush x:Key="Brush.AccentHover"      Color="#FF4A4AE4" />
     <SolidColorBrush x:Key="Brush.AccentForeground" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="Brush.AccentSubtle"     Color="#FFECEBFF" />
     <SolidColorBrush x:Key="Brush.Error"            Color="#FFD64541" />
+    <SolidColorBrush x:Key="Brush.RowAlt"           Color="#FFFAFAFD" />
+    <SolidColorBrush x:Key="Brush.ChipBg"           Color="#FFEEEDFB" />
+    <Color x:Key="Color.Shadow">#33202040</Color>
 </ResourceDictionary>

@@ -12,7 +12,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Ship the icon next to the exe so the tray can load it at runtime. -->
+    <!-- Embed the icon in the assembly so the tray loads it even from a single-file publish
+         (loose content files aren't reliably copied next to a single-file exe). -->
+    <EmbeddedResource Include="..\..\assets\app.ico">
+      <LogicalName>SmartTyping.UI.app.ico</LogicalName>
+    </EmbeddedResource>
+    <!-- Also ship it next to the exe for dev / framework-dependent builds. -->
     <None Include="..\..\assets\app.ico" Link="assets\app.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

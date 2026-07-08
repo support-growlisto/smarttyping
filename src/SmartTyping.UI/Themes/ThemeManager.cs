@@ -24,7 +24,18 @@ public static class ThemeManager
         CurrentSetting = setting switch { Light => Light, Dark => Dark, _ => System };
         var dark = CurrentSetting == Dark || (CurrentSetting == System && SystemUsesDarkTheme());
         var uri = new Uri($"pack://application:,,,/Themes/Theme.{(dark ? "Dark" : "Light")}.xaml", UriKind.Absolute);
-        var dict = new ResourceDictionary { Source = uri };
+
+        // Load the new palette FIRST. If it fails to parse (e.g. a bad colour value), keep the
+        // current theme instead of leaving the app with no brushes at all.
+        ResourceDictionary dict;
+        try
+        {
+            dict = new ResourceDictionary { Source = uri };
+        }
+        catch
+        {
+            return;
+        }
 
         var app = global::System.Windows.Application.Current;
         if (_current is not null)

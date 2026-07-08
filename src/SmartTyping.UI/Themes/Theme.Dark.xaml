@@ -11,9 +11,13 @@
     <SolidColorBrush x:Key="Brush.ControlHover"     Color="#FF313139" />
     <SolidColorBrush x:Key="Brush.ControlBorder"    Color="#FF3A3A45" />
     <SolidColorBrush x:Key="Brush.Border"           Color="#FF33333D" />
-    <SolidColorBrush x:Key="Brush.Selection"        Color="#FF35356088" />
+    <SolidColorBrush x:Key="Brush.Selection"        Color="#FF3C3768" />
     <SolidColorBrush x:Key="Brush.Accent"           Color="#FF8B7CFF" />
     <SolidColorBrush x:Key="Brush.AccentHover"      Color="#FF9B8CFF" />
     <SolidColorBrush x:Key="Brush.AccentForeground" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="Brush.AccentSubtle"     Color="#FF302B52" />
     <SolidColorBrush x:Key="Brush.Error"            Color="#FFFF6B5E" />
+    <SolidColorBrush x:Key="Brush.RowAlt"           Color="#FF212128" />
+    <SolidColorBrush x:Key="Brush.ChipBg"           Color="#FF2E2B44" />
+    <Color x:Key="Color.Shadow">#66000000</Color>
 </ResourceDictionary>

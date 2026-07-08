@@ -10,6 +10,7 @@ internal static class Strings
         new Dictionary<string, (string En, string Th)>
         {
             // Main window
+            ["Main_Tagline"] = ("Thai–English typing assistant", "ตัวช่วยพิมพ์ไทย–อังกฤษ"),
             ["Main_Categories"] = ("Categories", "หมวดหมู่"),
             ["Main_All"] = ("All", "ทั้งหมด"),
             ["Main_Add"] = ("Add", "เพิ่ม"),

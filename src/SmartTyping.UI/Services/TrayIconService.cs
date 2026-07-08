@@ -47,9 +47,10 @@ public sealed class TrayIconService : IDisposable
             return;
         }
 
+        _notifyIcon.BalloonTipIcon = WinForms.ToolTipIcon.Info;
         _notifyIcon.BalloonTipTitle = title;
         _notifyIcon.BalloonTipText = message;
-        _notifyIcon.ShowBalloonTip(1500);
+        _notifyIcon.ShowBalloonTip(3000);
     }
 
     private void ShowMainWindow()
@@ -66,16 +67,41 @@ public sealed class TrayIconService : IDisposable
 
     private static Icon LoadIcon()
     {
-        // Prefer a bundled app icon if present; otherwise use a stock icon so the tray always works.
-        var iconPath = Path.Combine(AppContext.BaseDirectory, "assets", "app.ico");
+        // Match the tray slot exactly so the icon renders crisp and never blank (some multi-frame
+        // PNG .ico files render empty when the wrong frame is auto-picked).
+        var size = WinForms.SystemInformation.SmallIconSize;
+
+        // 1) Embedded resource — works even from a single-file publish (no loose file needed).
         try
         {
-            return File.Exists(iconPath) ? new Icon(iconPath) : SystemIcons.Application;
+            using var stream = typeof(TrayIconService).Assembly
+                .GetManifestResourceStream("SmartTyping.UI.app.ico");
+            if (stream is not null)
+            {
+                return new Icon(stream, size);
+            }
         }
         catch
         {
-            return SystemIcons.Application;
+            // fall through to the file / stock fallbacks
         }
+
+        // 2) Loose file next to the exe (dev / framework-dependent builds).
+        try
+        {
+            var iconPath = Path.Combine(AppContext.BaseDirectory, "assets", "app.ico");
+            if (File.Exists(iconPath))
+            {
+                return new Icon(iconPath, size);
+            }
+        }
+        catch
+        {
+            // fall through to the stock icon
+        }
+
+        // 3) Last resort so the tray always has *something* clickable.
+        return SystemIcons.Application;
     }
 
     public void Dispose()
