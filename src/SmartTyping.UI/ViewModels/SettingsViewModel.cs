@@ -1,7 +1,12 @@
+using System.Collections.ObjectModel;
+using System.Windows.Input;
 using SmartTyping.Application.Abstractions;
 using SmartTyping.Application.Settings;
+using SmartTyping.Domain.Enums;
+using SmartTyping.Domain.ValueObjects;
 using SmartTyping.UI.Localization;
 using SmartTyping.UI.Mvvm;
+using SmartTyping.UI.Services;
 using SmartTyping.UI.Themes;
 
 namespace SmartTyping.UI.ViewModels;
@@ -12,11 +17,37 @@ public sealed record LanguageOption(string Code, string DisplayName);
 /// <summary>A selectable UI theme (system/light/dark).</summary>
 public sealed record ThemeOption(string Code, string DisplayName);
 
+/// <summary>A rebindable hotkey row shown in Settings.</summary>
+public sealed class HotkeyRowViewModel : ObservableObject
+{
+    private string _combo = string.Empty;
+
+    public HotkeyRowViewModel(HotkeyAction action, string label, ICommand changeCommand)
+    {
+        Action = action;
+        Label = label;
+        ChangeCommand = changeCommand;
+    }
+
+    public HotkeyAction Action { get; }
+    public string Label { get; }
+    public ICommand ChangeCommand { get; }
+
+    public string Combo
+    {
+        get => _combo;
+        set => SetProperty(ref _combo, value);
+    }
+}
+
 /// <summary>View model for the settings view. Persists each toggle immediately.</summary>
 public sealed class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _settings;
     private readonly IStartupService _startup;
+    private readonly IKeyboardHook _hook;
+    private readonly IDialogService _dialogs;
+    private readonly Dictionary<HotkeyAction, Hotkey> _hotkeys = new(SettingsService.DefaultHotkeys);
     private bool _loading;
 
     private bool _snippetExpansionEnabled = true;
@@ -25,10 +56,12 @@ public sealed class SettingsViewModel : ObservableObject
     private LanguageOption _selectedLanguage;
     private ThemeOption _selectedTheme;
 
-    public SettingsViewModel(SettingsService settings, IStartupService startup)
+    public SettingsViewModel(SettingsService settings, IStartupService startup, IKeyboardHook hook, IDialogService dialogs)
     {
         _settings = settings;
         _startup = startup;
+        _hook = hook;
+        _dialogs = dialogs;
         _selectedLanguage = Languages[0];
 
         var loc = LocalizationManager.Instance;
@@ -39,6 +72,24 @@ public sealed class SettingsViewModel : ObservableObject
             new ThemeOption(ThemeManager.Dark, loc["Theme_Dark"])
         };
         _selectedTheme = Themes[0];
+
+        HotkeyRows = new ObservableCollection<HotkeyRowViewModel>
+        {
+            NewRow(HotkeyAction.Convert, loc["Settings_ConvertLayout"]),
+            NewRow(HotkeyAction.Expand, loc["Settings_ExpandSnippet"]),
+            NewRow(HotkeyAction.Picker, loc["Settings_Picker"]),
+            NewRow(HotkeyAction.Capture, loc["Settings_Capture"])
+        };
+        RefreshHotkeyRows();
+    }
+
+    public ObservableCollection<HotkeyRowViewModel> HotkeyRows { get; }
+
+    private HotkeyRowViewModel NewRow(HotkeyAction action, string label)
+    {
+        HotkeyRowViewModel? row = null;
+        row = new HotkeyRowViewModel(action, label, new RelayCommand(() => ChangeHotkey(row!)));
+        return row;
     }
 
     public IReadOnlyList<LanguageOption> Languages { get; } = new[]
@@ -81,11 +132,35 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
-    /// <summary>The fixed conversion hotkey (configurable in a later version).</summary>
-    public string ConversionHotkeyText => "Ctrl + Shift + L";
+    private void ChangeHotkey(HotkeyRowViewModel row)
+    {
+        var captured = _dialogs.RecordHotkey();
+        if (captured is null)
+        {
+            return;
+        }
 
-    /// <summary>The fixed snippet-expansion hotkey (configurable in a later version).</summary>
-    public string ExpansionHotkeyText => "Ctrl + Shift + E";
+        var hotkey = captured.Value;
+        if (_hotkeys.Any(kv => kv.Key != row.Action && kv.Value == hotkey))
+        {
+            var loc = LocalizationManager.Instance;
+            _dialogs.ShowMessage(loc["Hotkey_Duplicate"], loc["Settings_Hotkeys"]);
+            return;
+        }
+
+        _hotkeys[row.Action] = hotkey;
+        row.Combo = hotkey.ToStorageString();
+        _hook.UpdateBindings(new Dictionary<HotkeyAction, Hotkey>(_hotkeys));
+        _ = _settings.SetHotkeyAsync(row.Action, hotkey);
+    }
+
+    private void RefreshHotkeyRows()
+    {
+        foreach (var row in HotkeyRows)
+        {
+            row.Combo = _hotkeys[row.Action].ToStorageString();
+        }
+    }
 
     public bool SnippetExpansionEnabled
     {
@@ -147,6 +222,14 @@ public sealed class SettingsViewModel : ObservableObject
 
             var themeCode = await _settings.GetThemeAsync();
             SelectedTheme = Themes.FirstOrDefault(t => t.Code == themeCode) ?? Themes[0];
+
+            var hotkeys = await _settings.GetHotkeysAsync();
+            foreach (var (action, hotkey) in hotkeys)
+            {
+                _hotkeys[action] = hotkey;
+            }
+
+            RefreshHotkeyRows();
         }
         finally
         {

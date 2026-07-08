@@ -1,3 +1,4 @@
+using SmartTyping.Domain.ValueObjects;
 using SmartTyping.UI.ViewModels;
 
 namespace SmartTyping.UI.Services;
@@ -19,4 +20,10 @@ public interface IDialogService
 
     /// <summary>Shows a save-file dialog. Returns the chosen path, or null if cancelled.</summary>
     string? SaveFile(string filter, string title, string defaultFileName);
+
+    /// <summary>Shows the hotkey recorder. Returns the captured combination, or null if cancelled.</summary>
+    Hotkey? RecordHotkey();
+
+    /// <summary>Shows a simple information message.</summary>
+    void ShowMessage(string message, string title);
 }

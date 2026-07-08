@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test suite grown to **60** (53 unit + 7 integration), covering the new formats/offsets/cursor and the import/export service (add / skip / overwrite / round-trip / category creation).
 
 ### New features
+- **Configurable hotkeys**: all four global hotkeys (convert / expand / quick-picker / add-from-selection) can be rebound from Settings. A recorder captures the combination; duplicates are rejected and a combo must include Ctrl/Alt/Win. Bindings persist and apply live. The `Hotkey` value object (modifiers + key, parse/format) is unit-tested; the low-level hook now matches configurable bindings.
+- **Smarter fuzzy search**: the quick-picker now uses subsequence matching (fzf-style) with scoring — prefix, word-boundary, camelCase, and contiguous-run bonuses; trigger matches outrank content matches, ties break by usage. e.g. `phn` finds `/phone`.
 - **Dark mode**: light/dark theme with a **follow-system** default, switchable live from Settings (persisted). All windows re-theme instantly via a small `ThemeManager` swapping brush dictionaries; styles reference them with `DynamicResource`.
 - **Add snippet from selection** (Ctrl+Shift+N): grabs the selected text and opens the Add dialog pre-filled with it. Skips detected password fields.
 - **`{input:Label}` template placeholders**: snippets can prompt for values on expansion (e.g. `Dear {input:Name},`). A small form collects one value per unique label; the same label is asked once. Cancelling aborts the expansion and does not count usage. Works for expansion, quick-picker, and the edit-dialog Preview.

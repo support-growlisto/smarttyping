@@ -19,6 +19,9 @@ public interface IKeyboardHook : IDisposable
     /// <summary>Raised when the capture-to-snippet hotkey (default Ctrl+Shift+N) is pressed.</summary>
     event EventHandler? CaptureHotkeyPressed;
 
+    /// <summary>Replaces the hotkey bindings the hook matches against (applied live).</summary>
+    void UpdateBindings(IReadOnlyDictionary<Domain.Enums.HotkeyAction, Domain.ValueObjects.Hotkey> bindings);
+
     /// <summary>Begins listening for the hotkey.</summary>
     void Start();
 

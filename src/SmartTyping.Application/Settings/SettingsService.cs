@@ -1,5 +1,6 @@
 using SmartTyping.Application.Abstractions;
 using SmartTyping.Domain.Enums;
+using SmartTyping.Domain.ValueObjects;
 
 namespace SmartTyping.Application.Settings;
 
@@ -56,6 +57,44 @@ public sealed class SettingsService
 
     public Task SetThemeAsync(string theme) =>
         _repository.SetAsync(SettingKeys.Theme, theme);
+
+    /// <summary>The default hotkeys used when none is saved (Ctrl+Shift+L / E / Space / N).</summary>
+    public static IReadOnlyDictionary<HotkeyAction, Hotkey> DefaultHotkeys { get; } =
+        new Dictionary<HotkeyAction, Hotkey>
+        {
+            [HotkeyAction.Convert] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x4C), // L
+            [HotkeyAction.Expand] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x45),  // E
+            [HotkeyAction.Picker] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x20),  // Space
+            [HotkeyAction.Capture] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x4E)  // N
+        };
+
+    /// <summary>Returns the effective hotkey for each action (saved value or the default).</summary>
+    public async Task<IReadOnlyDictionary<HotkeyAction, Hotkey>> GetHotkeysAsync()
+    {
+        var result = new Dictionary<HotkeyAction, Hotkey>(DefaultHotkeys);
+        foreach (var (action, key) in HotkeySettingKeys)
+        {
+            var raw = await _repository.GetAsync(key);
+            if (raw is not null && Hotkey.TryParse(raw, out var parsed) && parsed.IsValid)
+            {
+                result[action] = parsed;
+            }
+        }
+
+        return result;
+    }
+
+    public Task SetHotkeyAsync(HotkeyAction action, Hotkey hotkey) =>
+        _repository.SetAsync(HotkeySettingKeys[action], hotkey.ToStorageString());
+
+    private static readonly IReadOnlyDictionary<HotkeyAction, string> HotkeySettingKeys =
+        new Dictionary<HotkeyAction, string>
+        {
+            [HotkeyAction.Convert] = SettingKeys.HotkeyConvert,
+            [HotkeyAction.Expand] = SettingKeys.HotkeyExpand,
+            [HotkeyAction.Picker] = SettingKeys.HotkeyPicker,
+            [HotkeyAction.Capture] = SettingKeys.HotkeyCapture
+        };
 
     private async Task<bool> GetBoolAsync(string key, bool defaultValue)
     {

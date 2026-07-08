@@ -53,4 +53,15 @@ public sealed class DialogService : IDialogService
         };
         return dialog.ShowDialog() == true ? dialog.FileName : null;
     }
+
+    public Domain.ValueObjects.Hotkey? RecordHotkey()
+    {
+        var window = new HotkeyRecorderWindow { Owner = System.Windows.Application.Current.MainWindow };
+        return window.ShowDialog() == true ? window.Result : null;
+    }
+
+    public void ShowMessage(string message, string title) =>
+        System.Windows.MessageBox.Show(
+            System.Windows.Application.Current.MainWindow!, message, title,
+            MessageBoxButton.OK, MessageBoxImage.Information);
 }

@@ -58,6 +58,37 @@ public sealed class SnippetSearchTests
     }
 
     [Fact]
+    public void Fuzzy_NonContiguousSubsequenceMatches()
+    {
+        // "phn" is not a substring of "/phone" but is a subsequence (p-h-o-n-e).
+        var result = SnippetSearch.Filter(Items, "phn");
+
+        Assert.Contains(result, i => i.Trigger == "/phone");
+        Assert.Equal("/phone", result[0].Trigger);
+    }
+
+    [Fact]
+    public void Fuzzy_RespectsOrder()
+    {
+        // "eno" is not a subsequence of "/phone" (o comes before n), so no trigger match.
+        var (matched, _) = (FuzzyMatcher.TryMatch("/phone", "eno", out var s), s);
+        Assert.False(matched);
+    }
+
+    [Fact]
+    public void Fuzzy_PrefixScoresHigherThanMidMatch()
+    {
+        var items = new[]
+        {
+            new SnippetSearchItem(1, "/abcd", "x", 0),   // "ab" at start
+            new SnippetSearchItem(2, "/xabx", "y", 0),   // "ab" in the middle
+        };
+
+        var result = SnippetSearch.Filter(items, "ab");
+        Assert.Equal("/abcd", result[0].Trigger);
+    }
+
+    [Fact]
     public void ContentContains_RanksAfterTriggerMatches()
     {
         var result = SnippetSearch.Filter(Items, "phone");

@@ -14,7 +14,7 @@ A living view of where SmartTyping Desktop is headed. Order is by priority, not 
 
 ## Next (v0.2)
 
-- Configurable hotkeys (rebind the conversion/expansion keys).
+- ~~Configurable hotkeys (rebind the conversion/expansion keys)~~ — **done** (v0.1): all four hotkeys rebindable in Settings.
 - ~~Start with Windows (registry/Startup entry, user opt-in)~~ — **done** (v0.1).
 - ~~User-input placeholders in templates (`{input:Label}` prompts a small dialog)~~ — **done** (v0.1).
 - ~~Import/export snippets (JSON)~~ — **done** (v0.1): skip/overwrite conflict handling, category recreation.

@@ -91,10 +91,12 @@ public partial class App : System.Windows.Application
             var settings = _services.GetRequiredService<SettingsService>();
             Localization.LocalizationManager.Instance.SetLanguage(settings.GetLanguageAsync().GetAwaiter().GetResult());
             Themes.ThemeManager.Apply(settings.GetThemeAsync().GetAwaiter().GetResult());
+            _services.GetRequiredService<IKeyboardHook>()
+                .UpdateBindings(settings.GetHotkeysAsync().GetAwaiter().GetResult());
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to load UI language/theme; using defaults.");
+            _logger.LogWarning(ex, "Failed to load UI language/theme/hotkeys; using defaults.");
             Themes.ThemeManager.Apply(Themes.ThemeManager.System);
         }
 

@@ -144,6 +144,8 @@ sample snippets.
 - **Ctrl + Shift + Space** — open the **quick-picker**: search your snippets and insert one at the caret.
 - **Ctrl + Shift + N** — **add a snippet from the current selection** (opens the Add dialog pre-filled).
 
+All four hotkeys are **rebindable** in Settings. The quick-picker uses **fuzzy** (subsequence) search.
+
 The UI is **Thai by default** (switch to English in Settings) and follows the system **light/dark** theme (overridable in Settings).
 
 ## How to publish (self-contained single file)

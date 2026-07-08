@@ -12,5 +12,9 @@ public static class SettingKeys
     public const string OnboardingCompleted = "OnboardingCompleted";
     public const string Language = "Language";
     public const string Theme = "Theme";
+    public const string HotkeyConvert = "HotkeyConvert";
+    public const string HotkeyExpand = "HotkeyExpand";
+    public const string HotkeyPicker = "HotkeyPicker";
+    public const string HotkeyCapture = "HotkeyCapture";
     public const string SchemaVersion = "SchemaVersion";
 }

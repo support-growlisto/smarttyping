@@ -1,5 +1,8 @@
 using Microsoft.Extensions.Logging;
 using SmartTyping.Application.Abstractions;
+using SmartTyping.Application.Settings;
+using SmartTyping.Domain.Enums;
+using SmartTyping.Domain.ValueObjects;
 
 namespace SmartTyping.Infrastructure.Input;
 
@@ -21,6 +24,9 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     private readonly NativeMethods.LowLevelKeyboardProc _proc;
     private IntPtr _hookHandle = IntPtr.Zero;
 
+    // Current action→hotkey bindings (defaults until UpdateBindings is called). Volatile swap.
+    private IReadOnlyDictionary<HotkeyAction, Hotkey> _bindings = SettingsService.DefaultHotkeys;
+
     public WindowsKeyboardHook(ILogger<WindowsKeyboardHook> logger)
     {
         _logger = logger;
@@ -34,6 +40,8 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     public event EventHandler? PickerHotkeyPressed;
 
     public event EventHandler? CaptureHotkeyPressed;
+
+    public void UpdateBindings(IReadOnlyDictionary<HotkeyAction, Hotkey> bindings) => _bindings = bindings;
 
     public void Start()
     {
@@ -66,23 +74,19 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     {
         try
         {
-            if (nCode >= 0 && IsKeyDown(wParam) && IsCtrlDown() && IsShiftDown())
+            if (nCode >= 0 && IsKeyDown(wParam))
             {
                 var info = System.Runtime.InteropServices.Marshal.PtrToStructure<NativeMethods.KBDLLHOOKSTRUCT>(lParam);
-                switch (info.vkCode)
+                var vk = (int)info.vkCode;
+                var mods = CurrentModifiers();
+
+                foreach (var (action, hotkey) in _bindings)
                 {
-                    case NativeMethods.VK_L:
-                        Raise(ConversionHotkeyPressed);
+                    if (hotkey.VirtualKey == vk && hotkey.Modifiers == mods)
+                    {
+                        Raise(EventFor(action));
                         break;
-                    case NativeMethods.VK_E:
-                        Raise(ExpansionHotkeyPressed);
-                        break;
-                    case NativeMethods.VK_SPACE:
-                        Raise(PickerHotkeyPressed);
-                        break;
-                    case NativeMethods.VK_N:
-                        Raise(CaptureHotkeyPressed);
-                        break;
+                    }
                 }
             }
         }
@@ -103,15 +107,32 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
     }
 
+    private EventHandler? EventFor(HotkeyAction action) => action switch
+    {
+        HotkeyAction.Convert => ConversionHotkeyPressed,
+        HotkeyAction.Expand => ExpansionHotkeyPressed,
+        HotkeyAction.Picker => PickerHotkeyPressed,
+        HotkeyAction.Capture => CaptureHotkeyPressed,
+        _ => null
+    };
+
     private static bool IsKeyDown(IntPtr wParam)
     {
         var msg = (int)wParam;
         return msg == NativeMethods.WM_KEYDOWN || msg == NativeMethods.WM_SYSKEYDOWN;
     }
 
-    private static bool IsCtrlDown() => (NativeMethods.GetAsyncKeyState(NativeMethods.VK_CONTROL) & 0x8000) != 0;
+    private static HotkeyModifiers CurrentModifiers()
+    {
+        var mods = HotkeyModifiers.None;
+        if (IsDown(NativeMethods.VK_CONTROL)) mods |= HotkeyModifiers.Ctrl;
+        if (IsDown(NativeMethods.VK_SHIFT)) mods |= HotkeyModifiers.Shift;
+        if (IsDown(NativeMethods.VK_MENU)) mods |= HotkeyModifiers.Alt;
+        if (IsDown(NativeMethods.VK_LWIN) || IsDown(NativeMethods.VK_RWIN)) mods |= HotkeyModifiers.Win;
+        return mods;
+    }
 
-    private static bool IsShiftDown() => (NativeMethods.GetAsyncKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
+    private static bool IsDown(int vk) => (NativeMethods.GetAsyncKeyState(vk) & 0x8000) != 0;
 
     public void Dispose() => Stop();
 }

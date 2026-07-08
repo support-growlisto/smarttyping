@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SmartTyping.UI.Localization"
         Title="{Binding [Settings_Title], Source={x:Static loc:LocalizationManager.Instance}}"
-        Height="375" Width="400"
+        Height="450" Width="420" SizeToContent="Height"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         FontFamily="Segoe UI" FontSize="13">
     <StackPanel Margin="16">
@@ -16,14 +16,23 @@
 
         <TextBlock Text="{Binding [Settings_Hotkeys], Source={x:Static loc:LocalizationManager.Instance}}"
                    FontWeight="SemiBold" Margin="0,16,0,4" />
-        <StackPanel Orientation="Horizontal">
-            <TextBlock Text="{Binding [Settings_ConvertLayout], Source={x:Static loc:LocalizationManager.Instance}}" Width="120" />
-            <TextBlock Text="{Binding ConversionHotkeyText}" FontWeight="SemiBold" />
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-            <TextBlock Text="{Binding [Settings_ExpandSnippet], Source={x:Static loc:LocalizationManager.Instance}}" Width="120" />
-            <TextBlock Text="{Binding ExpansionHotkeyText}" FontWeight="SemiBold" />
-        </StackPanel>
+        <ItemsControl ItemsSource="{Binding HotkeyRows}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="130" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Combo}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Command="{Binding ChangeCommand}" Padding="8,2"
+                                Content="{Binding [Settings_Change], Source={x:Static loc:LocalizationManager.Instance}}" />
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
         <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
             <TextBlock Text="{Binding [Settings_Language], Source={x:Static loc:LocalizationManager.Instance}}"
