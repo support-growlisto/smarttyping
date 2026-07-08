@@ -1,74 +1,74 @@
-# 01 — Product Requirements Document (PRD)
+# 01 — เอกสารข้อกำหนดผลิตภัณฑ์ (PRD)
 
-## 1. Overview
+## 1. ภาพรวม
 
-SmartTyping Desktop is a local Windows app that helps bilingual Thai/English users
-(a) fix wrong-keyboard-layout text and (b) expand short triggers into longer templated text.
+SmartTyping Desktop เป็นแอป Windows ที่ทำงานในเครื่อง ช่วยผู้ใช้สองภาษาไทย/อังกฤษ
+(ก) แก้ข้อความที่พิมพ์ผิดผังแป้นพิมพ์ และ (ข) ขยาย trigger สั้น ๆ ให้เป็นข้อความเทมเพลตที่ยาวขึ้น
 
-## 2. Target users
+## 2. กลุ่มผู้ใช้เป้าหมาย
 
-- Thai office workers, students, developers, and support staff who switch between Thai and English.
-- Anyone who retypes boilerplate (signatures, phone numbers, addresses, canned replies).
+- พนักงานออฟฟิศ นักเรียนนักศึกษา นักพัฒนา และเจ้าหน้าที่ซัพพอร์ตชาวไทยที่สลับใช้ภาษาไทยและอังกฤษ
+- ใครก็ตามที่ต้องพิมพ์ข้อความสำเร็จรูปซ้ำ ๆ (ลายเซ็น เบอร์โทรศัพท์ ที่อยู่ คำตอบสำเร็จรูป)
 
-## 3. User stories (MVP)
+## 3. เรื่องราวผู้ใช้ (MVP)
 
-| ID   | As a…            | I want to…                                              | So that…                                  |
+| ID   | ในฐานะ…          | ฉันต้องการ…                                             | เพื่อที่…                                  |
 |------|------------------|---------------------------------------------------------|-------------------------------------------|
-| US-1 | user             | type `/phone` and have it expand to my phone number     | I don't retype it constantly              |
-| US-2 | user             | organize snippets into categories                       | I can find them easily                    |
-| US-3 | user             | enable/disable a snippet without deleting it            | I can pause one temporarily               |
-| US-4 | user             | see how often each snippet is used                      | I know which ones matter                  |
-| US-5 | user             | select gibberish text and press a hotkey to fix layout  | I don't retype after a wrong-layout typo  |
-| US-6 | user             | insert `{date}`/`{time}`/`{clipboard}` inside a snippet | snippets stay dynamic                     |
-| US-7 | user             | turn snippet expansion or language correction on/off     | I control when the app acts               |
+| US-1 | ผู้ใช้           | พิมพ์ `/phone` แล้วให้ขยายเป็นเบอร์โทรศัพท์ของฉัน        | ฉันจะได้ไม่ต้องพิมพ์ซ้ำตลอดเวลา           |
+| US-2 | ผู้ใช้           | จัด snippet เข้าเป็นหมวดหมู่                             | ฉันจะได้หาเจอง่าย                          |
+| US-3 | ผู้ใช้           | เปิด/ปิด snippet โดยไม่ต้องลบทิ้ง                        | ฉันจะได้พักการใช้ชั่วคราวได้              |
+| US-4 | ผู้ใช้           | เห็นว่าแต่ละ snippet ถูกใช้บ่อยแค่ไหน                   | ฉันจะได้รู้ว่าอันไหนสำคัญ                  |
+| US-5 | ผู้ใช้           | เลือกข้อความที่อ่านไม่รู้เรื่องแล้วกด hotkey เพื่อแก้ผัง | ฉันจะได้ไม่ต้องพิมพ์ใหม่หลังพิมพ์ผิดผัง    |
+| US-6 | ผู้ใช้           | แทรก `{date}`/`{time}`/`{clipboard}` ภายใน snippet      | snippet ยังคงเป็นแบบไดนามิก                |
+| US-7 | ผู้ใช้           | เปิด/ปิดการขยาย snippet หรือการแก้ภาษา                  | ฉันควบคุมได้ว่าจะให้แอปทำงานเมื่อไหร่      |
 
-## 4. Functional requirements
+## 4. ข้อกำหนดด้านฟังก์ชัน
 
-### 4.1 Snippet expansion
-- FR-1 Create/read/update/delete snippets (trigger, content, category, enabled, usage count).
-- FR-2 A trigger is a short token (default prefix `/`, e.g. `/phone`). Triggers are unique.
-- FR-3 On explicit action, the matching snippet's resolved content replaces the trigger.
-- FR-4 Expansion increments the snippet's usage count and records a usage-history row.
-- FR-5 Disabled snippets never expand.
+### 4.1 การขยาย snippet
+- FR-1 สร้าง/อ่าน/แก้ไข/ลบ snippet (trigger, content, category, enabled, usage count)
+- FR-2 trigger เป็น token สั้น ๆ (prefix เริ่มต้น `/`, เช่น `/phone`) โดย trigger ต้องไม่ซ้ำกัน
+- FR-3 เมื่อลงมือชัดเจน content ที่แก้ไขแล้วของ snippet ที่ตรงกันจะแทนที่ trigger
+- FR-4 การขยายเพิ่มค่า usage count ของ snippet และบันทึกแถวประวัติการใช้งาน
+- FR-5 snippet ที่ปิดอยู่จะไม่ขยายเด็ดขาด
 
-### 4.2 Language converter
-- FR-6 Convert a string between Thai Kedmanee and English QWERTY layouts, character by character.
-- FR-7 Hotkey `Ctrl+Shift+L` converts the current selection; if no selection, the last typed word.
-- FR-8 Conversion is reversible for characters present in the mapping table; unmapped characters pass through unchanged.
-- FR-9 Direction is auto-detected (predominantly Thai → convert to EN layout, and vice versa) with a manual override available later.
+### 4.2 ตัวแปลงภาษา
+- FR-6 แปลงสตริงระหว่างผังแป้นพิมพ์ไทย Kedmanee และอังกฤษ QWERTY ทีละอักขระ
+- FR-7 hotkey `Ctrl+Shift+L` แปลงข้อความที่เลือกอยู่ หากไม่มีการเลือก จะใช้คำที่พิมพ์ล่าสุด
+- FR-8 การแปลงย้อนกลับได้สำหรับอักขระที่มีอยู่ในตาราง mapping อักขระที่ไม่ได้ map จะผ่านไปโดยไม่เปลี่ยนแปลง
+- FR-9 ตรวจจับทิศทางอัตโนมัติ (ส่วนใหญ่เป็นไทย → แปลงเป็นผัง EN และกลับกัน) โดยมีการ override ด้วยตนเองให้ใช้ในภายหลัง
 
-### 4.3 Template variables
-- FR-10 `{date}` → current date (locale short date), `{time}` → current time, `{clipboard}` → current clipboard text.
-- FR-10a `{date:FORMAT}` / `{time:FORMAT}` → custom .NET formats (invariant/Gregorian, e.g. `{date:yyyy-MM-dd}`).
-- FR-10b `{date+N}` / `{date-N}` → date offset by N days (optionally combined with a format).
-- FR-10c `{cursor}` → marks the caret position after insertion.
-- FR-10d `{input:Label}` → prompts the user for a value on expansion (same label prompted once; cancel aborts).
-- FR-11 Unknown `{...}` tokens are left intact (no crash, no data loss).
-- FR-12 Snippets can be exported to and imported from a JSON file (skip or overwrite on trigger conflict).
+### 4.3 ตัวแปรเทมเพลต
+- FR-10 `{date}` → วันที่ปัจจุบัน (locale short date), `{time}` → เวลาปัจจุบัน, `{clipboard}` → ข้อความใน clipboard ปัจจุบัน
+- FR-10a `{date:FORMAT}` / `{time:FORMAT}` → รูปแบบ .NET แบบกำหนดเอง (invariant/Gregorian, เช่น `{date:yyyy-MM-dd}`)
+- FR-10b `{date+N}` / `{date-N}` → วันที่เลื่อนไป N วัน (สามารถรวมกับ format ได้)
+- FR-10c `{cursor}` → ทำเครื่องหมายตำแหน่ง caret หลังการแทรก
+- FR-10d `{input:Label}` → ถามค่าจากผู้ใช้ตอนขยาย (label เดียวกันถามครั้งเดียว การยกเลิกจะล้มเลิก)
+- FR-11 token `{...}` ที่ไม่รู้จักจะถูกปล่อยไว้ตามเดิม (ไม่ crash ไม่สูญเสียข้อมูล)
+- FR-12 สามารถ export snippet ไปยังและ import จากไฟล์ JSON ได้ (ข้ามหรือเขียนทับเมื่อ trigger ชนกัน)
 
-### 4.4 Settings
-- FR-12 Toggle "snippet expansion enabled" and "language correction enabled".
-- FR-13 Settings persist in SQLite and load on startup.
-- FR-14 (Planned) start-with-Windows, configurable hotkeys.
+### 4.4 การตั้งค่า
+- FR-12 สลับ "snippet expansion enabled" และ "language correction enabled"
+- FR-13 การตั้งค่าคงอยู่ใน SQLite และโหลดตอนเริ่มต้น
+- FR-14 (วางแผนไว้) เริ่มพร้อม Windows, hotkey ที่ตั้งค่าได้
 
-## 5. Non-functional requirements
+## 5. ข้อกำหนดที่ไม่ใช่ฟังก์ชัน
 
-- NFR-1 **Local-only**: no network calls in the MVP.
-- NFR-2 **Safety**: no automatic replacement without a user action; avoid acting in password fields where detectable.
-- NFR-3 **Performance**: snippet lookup and conversion complete in < 50 ms for typical inputs.
-- NFR-4 **Reliability**: a failed injection falls back to clipboard paste and never corrupts the DB.
-- NFR-5 **Testability**: core logic isolated from Windows APIs and unit-tested.
-- NFR-6 **Privacy**: usage history stays local; user can clear it.
+- NFR-1 **Local-only**: ไม่มีการเรียกเครือข่ายใน MVP
+- NFR-2 **ความปลอดภัย**: ไม่มีการแทนที่อัตโนมัติโดยไม่มีการลงมือของผู้ใช้ หลีกเลี่ยงการทำงานในช่องรหัสผ่านเมื่อตรวจจับได้
+- NFR-3 **ประสิทธิภาพ**: การค้นหา snippet และการแปลงเสร็จภายใน < 50 ms สำหรับ input ทั่วไป
+- NFR-4 **ความน่าเชื่อถือ**: การฉีดที่ล้มเหลวจะ fallback ไปที่ clipboard paste และไม่ทำให้ DB เสียหาย
+- NFR-5 **ความสามารถในการทดสอบ**: ตรรกะหลักแยกออกจาก Windows API และมี unit test
+- NFR-6 **ความเป็นส่วนตัว**: ประวัติการใช้งานอยู่ในเครื่อง ผู้ใช้สามารถล้างได้
 
-## 6. Out of scope (MVP)
+## 6. อยู่นอกขอบเขต (MVP)
 
-Automatic correction, AI, cloud sync, plugins, mobile, macOS/Linux.
+การแก้ไขอัตโนมัติ, AI, การซิงก์คลาวด์, ปลั๊กอิน, มือถือ, macOS/Linux
 
-## 7. Acceptance criteria (samples)
+## 7. เกณฑ์การยอมรับ (ตัวอย่าง)
 
-- Given a snippet `/sig` → "Best regards,\nDana", when the user triggers expansion on `/sig`,
-  then the trigger is replaced by the two-line signature and usage count increments by 1.
-- Given selected text `l;ylfu`, when the user presses `Ctrl+Shift+L`,
-  then the selection becomes `สวัสดี`.
-- Given a snippet content `Today is {date}`, when expanded,
-  then `{date}` is replaced with the current short date.
+- กำหนดให้ snippet `/sig` → "Best regards,\nDana" เมื่อผู้ใช้เรียกการขยายบน `/sig`
+  แล้ว trigger จะถูกแทนที่ด้วยลายเซ็นสองบรรทัดและ usage count เพิ่มขึ้น 1
+- กำหนดให้ข้อความที่เลือก `l;ylfu` เมื่อผู้ใช้กด `Ctrl+Shift+L`
+  แล้วข้อความที่เลือกจะกลายเป็น `สวัสดี`
+- กำหนดให้ content ของ snippet เป็น `Today is {date}` เมื่อขยาย
+  แล้ว `{date}` จะถูกแทนที่ด้วยวันที่แบบสั้นปัจจุบัน

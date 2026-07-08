@@ -1,14 +1,14 @@
 # 02 — Software Requirements Specification (SRS)
 
-## 1. Purpose
+## 1. วัตถุประสงค์
 
-Detailed, testable requirements for the SmartTyping Desktop MVP. Complements the PRD
-with interface-level and behavioral detail.
+ข้อกำหนดโดยละเอียดที่ทดสอบได้สำหรับ SmartTyping Desktop MVP เป็นส่วนเสริมของ PRD
+โดยเพิ่มรายละเอียดในระดับ interface และพฤติกรรม
 
-## 2. System context
+## 2. บริบทของระบบ
 
-A single-user desktop application. Inputs: keyboard events, clipboard, local SQLite DB.
-Outputs: text injected into the foreground application, UI, local logs.
+แอปพลิเคชันเดสก์ท็อปสำหรับผู้ใช้คนเดียว อินพุต: keyboard events, clipboard, local SQLite DB
+เอาต์พุต: ข้อความที่ถูกแทรกเข้าไปยังแอปพลิเคชันที่อยู่เบื้องหน้า, UI, local logs
 
 ```
 [User keyboard] ─► [Keyboard hook] ─► [Application services] ─► [Text injection] ─► [Foreground app]
@@ -19,67 +19,67 @@ Outputs: text injected into the foreground application, UI, local logs.
 ## 3. External interfaces
 
 ### 3.1 User interfaces
-- Main window: snippet list (filterable by category, searchable), toolbar (add/edit/delete/enable).
-- Add/Edit snippet dialog: trigger, content (multiline), category, enabled.
-- Settings view: toggles for expansion and language correction.
-- System tray icon: show/hide window, toggle features, exit.
+- หน้าต่างหลัก: รายการ snippet (กรองตาม category ได้, ค้นหาได้), แถบเครื่องมือ (เพิ่ม/แก้ไข/ลบ/เปิดใช้งาน)
+- ไดอะล็อกเพิ่ม/แก้ไข snippet: trigger, เนื้อหา (หลายบรรทัด), category, สถานะเปิดใช้งาน
+- หน้าตั้งค่า: ปุ่มสลับสำหรับการขยายข้อความ (expansion) และการแก้ไขภาษา
+- ไอคอน System tray: แสดง/ซ่อนหน้าต่าง, สลับเปิดปิดฟีเจอร์, ออกจากโปรแกรม
 
 ### 3.2 Hardware/OS interfaces
-- Low-level keyboard hook (`WH_KEYBOARD_LL`) via Infrastructure only.
-- Global hotkey registration (`RegisterHotKey`) for `Ctrl+Shift+L`.
-- Clipboard read/write; simulated keystrokes / paste for injection.
+- Low-level keyboard hook (`WH_KEYBOARD_LL`) ผ่าน Infrastructure เท่านั้น
+- การลงทะเบียน global hotkey (`RegisterHotKey`) สำหรับ `Ctrl+Shift+L`
+- อ่าน/เขียน clipboard; จำลอง keystrokes / paste สำหรับการแทรกข้อความ
 
 ### 3.3 Software interfaces
-- SQLite via Dapper.
-- Serilog file sink under `%LOCALAPPDATA%\SmartTyping\logs`.
+- SQLite ผ่าน Dapper
+- Serilog file sink ภายใต้ `%LOCALAPPDATA%\SmartTyping\logs`
 
-## 4. Functional requirements (detailed)
+## 4. Functional requirements (รายละเอียด)
 
 ### 4.1 Snippet engine
-- SRS-1 The system SHALL store snippets with fields: Id, Trigger, Content, CategoryId (nullable),
-  IsEnabled, UsageCount, CreatedUtc, UpdatedUtc.
-- SRS-2 Triggers SHALL be unique (case-insensitive) and non-empty.
-- SRS-3 `SnippetExpansionService.TryExpand(trigger)` SHALL return the resolved content
-  (template variables applied) for an enabled snippet, or a no-match result otherwise.
-- SRS-4 On a successful expansion the service SHALL increment UsageCount and append a UsageHistory record.
+- SRS-1 ระบบ SHALL จัดเก็บ snippet ด้วยฟิลด์: Id, Trigger, Content, CategoryId (nullable),
+  IsEnabled, UsageCount, CreatedUtc, UpdatedUtc
+- SRS-2 Triggers SHALL ต้องไม่ซ้ำกัน (case-insensitive) และต้องไม่ว่างเปล่า
+- SRS-3 `SnippetExpansionService.TryExpand(trigger)` SHALL คืนค่าเนื้อหาที่ถูกแปลงแล้ว
+  (ใส่ตัวแปร template แล้ว) สำหรับ snippet ที่เปิดใช้งานอยู่ หรือคืนผลลัพธ์แบบไม่พบข้อมูลในกรณีอื่น
+- SRS-4 เมื่อการขยายสำเร็จ service SHALL เพิ่มค่า UsageCount และเพิ่มระเบียน UsageHistory
 
 ### 4.2 Template engine
-- SRS-5 `ITemplateEngine.Render(content)` SHALL replace `{date}`, `{time}`, `{clipboard}`
-  and leave unknown tokens unchanged.
-- SRS-6 Token matching SHALL be case-insensitive (`{Date}` == `{date}`).
+- SRS-5 `ITemplateEngine.Render(content)` SHALL แทนที่ `{date}`, `{time}`, `{clipboard}`
+  และคง token ที่ไม่รู้จักไว้ตามเดิม
+- SRS-6 การจับคู่ token SHALL เป็นแบบ case-insensitive (`{Date}` == `{date}`)
 
 ### 4.3 Layout converter
-- SRS-7 `IKeyboardLayoutConverter.Convert(text, direction)` SHALL map each character using the
-  Kedmanee↔QWERTY table; unmapped characters pass through.
-- SRS-8 `DetectDirection(text)` SHALL return the likely conversion direction based on the ratio of
-  Thai vs. Latin characters.
-- SRS-9 Conversion SHALL be a pure function (no I/O, no side effects) and fully unit-tested.
+- SRS-7 `IKeyboardLayoutConverter.Convert(text, direction)` SHALL แมปอักขระแต่ละตัวโดยใช้
+  ตาราง Kedmanee↔QWERTY; อักขระที่ไม่มีในแมปจะผ่านไปตามเดิม
+- SRS-8 `DetectDirection(text)` SHALL คืนทิศทางการแปลงที่น่าจะเป็นไปได้ โดยอิงจากอัตราส่วนของ
+  อักขระไทยเทียบกับอักขระละติน
+- SRS-9 การแปลง SHALL เป็น pure function (ไม่มี I/O, ไม่มี side effects) และผ่าน unit test อย่างครบถ้วน
 
 ### 4.4 Settings
-- SRS-10 Settings SHALL be key/value rows (`AppSetting`) loaded at startup and cached.
-- SRS-11 Changing a toggle SHALL persist immediately.
+- SRS-10 Settings SHALL เป็นแถวแบบ key/value (`AppSetting`) ที่โหลดตอนเริ่มต้นและถูก cache ไว้
+- SRS-11 การเปลี่ยนปุ่มสลับ SHALL บันทึกทันที
 
 ### 4.5 Input & injection (Infrastructure)
-- SRS-12 The keyboard hook SHALL be abstracted behind `IKeyboardHook` (start/stop, key events).
-- SRS-13 Text injection SHALL be abstracted behind `ITextInjector` with a clipboard-paste fallback.
-- SRS-14 The hotkey handler SHALL run conversion off the UI thread and marshal UI updates back.
+- SRS-12 keyboard hook SHALL ถูกกำหนดนามธรรมไว้เบื้องหลัง `IKeyboardHook` (start/stop, key events)
+- SRS-13 การแทรกข้อความ SHALL ถูกกำหนดนามธรรมไว้เบื้องหลัง `ITextInjector` พร้อม fallback แบบ clipboard-paste
+- SRS-14 ตัวจัดการ hotkey SHALL รันการแปลงนอก UI thread และ marshal การอัปเดต UI กลับมา
 
 ## 5. Non-functional requirements
 
-- SRS-15 Nullable reference types enabled; no suppressed nullability warnings in core layers.
-- SRS-16 No Windows API calls outside Infrastructure.
-- SRS-17 The app SHALL start even if the DB is missing (it self-initializes).
-- SRS-18 All exceptions in hooks/injection SHALL be logged and SHALL NOT crash the app.
+- SRS-15 เปิดใช้งาน nullable reference types; ไม่มีการระงับ (suppress) คำเตือน nullability ในเลเยอร์หลัก
+- SRS-16 ไม่มีการเรียก Windows API นอก Infrastructure
+- SRS-17 แอป SHALL เริ่มทำงานได้แม้ว่าจะไม่มี DB (ระบบจะ self-initialize)
+- SRS-18 ข้อยกเว้น (exception) ทั้งหมดใน hooks/injection SHALL ถูกบันทึก log และ SHALL NOT ทำให้แอปล่ม
 
 ## 6. Data requirements
 
-See [`04_Database.md`](04_Database.md) for schema. User data is never transmitted off-device.
+ดู [`04_Database.md`](04_Database.md) สำหรับ schema ข้อมูลผู้ใช้จะไม่ถูกส่งออกจากอุปกรณ์เลย
 
-## 7. Constraints & assumptions
+## 7. ข้อจำกัดและข้อสมมติ
 
-- Single foreground user session; no concurrent multi-instance support in MVP.
-- The user has permission to run low-level hooks (standard user is sufficient on Windows 10/11).
-- Some applications (elevated/secure desktops, password fields) may block injection — the app degrades gracefully.
+- session ผู้ใช้เบื้องหน้าเพียงหนึ่งเดียว; ไม่รองรับการรันหลาย instance พร้อมกันใน MVP
+- ผู้ใช้มีสิทธิ์ในการรัน low-level hooks (standard user เพียงพอบน Windows 10/11)
+- บางแอปพลิเคชัน (elevated/secure desktops, ช่องรหัสผ่าน) อาจบล็อกการแทรกข้อความ — แอปจะลดระดับการทำงานลงอย่างนุ่มนวล (degrade gracefully)
 
 ## 8. Traceability (PRD → SRS)
 

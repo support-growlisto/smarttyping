@@ -1,40 +1,40 @@
-# ADR-004 — Defer the plugin system
+# ADR-004 — เลื่อนการทำ plugin system ออกไป
 
 - Status: Accepted (deferral)
 - Date: 2026-07-08
 
-## Context
+## บริบท
 
-A plugin system (third-party providers for new template variables, converters, or actions) is an
-attractive long-term extensibility story. However, the MVP's goal is a small, correct, testable
-core. Designing a stable plugin contract prematurely risks over-engineering and locking us into a
-bad API before the core concepts have settled.
+plugin system (ผู้ให้บริการจากภายนอกสำหรับตัวแปร template, converter หรือ action ใหม่ ๆ) เป็น
+เรื่องราวการขยายความสามารถในระยะยาวที่น่าสนใจ อย่างไรก็ตาม เป้าหมายของ MVP คือแกนกลางที่เล็ก ถูกต้อง และทดสอบได้
+การออกแบบ contract ของ plugin ที่เสถียรก่อนเวลาอันควรมีความเสี่ยงที่จะ over-engineer และล็อกเราไว้กับ
+API ที่แย่ก่อนที่แนวคิดแกนกลางจะลงตัว
 
-## Decision
+## การตัดสินใจ
 
-**Do not build a plugin system in the MVP.** Instead:
+**อย่าสร้าง plugin system ใน MVP** แต่ให้:
 
-- Keep extension points as **internal interfaces** already used by DI (`ITemplateEngine`,
-  `IKeyboardLayoutConverter`, repositories). These are the natural seams a future plugin host would use.
-- Add new template variables / converters **in-tree** for now.
-- Revisit a real plugin architecture only after v1.0, once the core API is stable and there is
-  demonstrated demand.
+- คงจุดขยาย (extension points) ไว้เป็น **internal interfaces** ที่ DI ใช้อยู่แล้ว (`ITemplateEngine`,
+  `IKeyboardLayoutConverter`, repositories) สิ่งเหล่านี้คือรอยต่อตามธรรมชาติที่ plugin host ในอนาคตจะใช้
+- เพิ่มตัวแปร template / converter ใหม่ **ใน tree** ไปก่อน
+- กลับมาพิจารณาสถาปัตยกรรม plugin จริงจังอีกครั้งหลัง v1.0 เท่านั้น เมื่อ API แกนกลางเสถียรและมี
+  ความต้องการที่แสดงให้เห็นชัดเจน
 
-## Consequences
+## ผลที่ตามมา
 
-- **Pro**: no premature abstraction, no plugin loader/security/versioning burden during the MVP.
-- **Pro**: the interfaces we already have make a future plugin host feasible without a rewrite.
-- **Con**: third parties cannot extend the app yet — acceptable for the MVP audience.
+- **ข้อดี**: ไม่มี abstraction ก่อนเวลา ไม่มีภาระเรื่อง plugin loader/ความปลอดภัย/versioning ในระหว่าง MVP
+- **ข้อดี**: interfaces ที่เรามีอยู่แล้วทำให้ plugin host ในอนาคตเป็นไปได้โดยไม่ต้องเขียนใหม่
+- **ข้อเสีย**: บุคคลภายนอกยังขยายแอปไม่ได้ — ยอมรับได้สำหรับกลุ่มผู้ใช้ของ MVP
 
-## When to revisit
+## เมื่อใดควรกลับมาพิจารณาใหม่
 
-Reconsider when at least two of these are true: (1) the template/variable set is stable across two
-releases, (2) users request custom providers, (3) we can commit to a versioned, sandboxed contract
-and its maintenance. Until then, plugins stay on the roadmap's "Deferred" list.
+พิจารณาใหม่เมื่ออย่างน้อยสองข้อต่อไปนี้เป็นจริง: (1) ชุด template/ตัวแปรเสถียรตลอดสอง
+รีลีส, (2) ผู้ใช้ร้องขอ provider แบบกำหนดเอง, (3) เราสามารถผูกมัดกับ contract ที่มี version และ sandbox
+พร้อมทั้งดูแลรักษามันได้ จนกว่าจะถึงตอนนั้น plugin จะยังอยู่ในรายการ "Deferred" ของ roadmap
 
-## Alternatives considered
+## ทางเลือกที่พิจารณา
 
-- **MEF / assembly-scanning plugin host now** — real cost in security, versioning, and API stability
-  for zero MVP benefit. Rejected.
-- **Scripting hooks (e.g. embedded C#/Lua)** — powerful but a large surface area and a safety concern;
-  out of scope for a local-first, safety-focused MVP.
+- **plugin host แบบ MEF / assembly-scanning ตอนนี้เลย** — มีต้นทุนจริงด้านความปลอดภัย, versioning และความเสถียรของ API
+  เพื่อประโยชน์ต่อ MVP เป็นศูนย์ ปฏิเสธ
+- **scripting hooks (เช่น embedded C#/Lua)** — ทรงพลังแต่มีพื้นผิวกว้างและเป็นข้อกังวลด้านความปลอดภัย;
+  อยู่นอกขอบเขตสำหรับ MVP ที่เน้น local-first และเน้นความปลอดภัย

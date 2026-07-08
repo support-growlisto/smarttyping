@@ -1,11 +1,11 @@
-# 04 — Database
+# 04 — ฐานข้อมูล
 
-## 1. Engine
+## 1. เอนจิน
 
-SQLite, accessed via Dapper. One file database per user:
-`%LOCALAPPDATA%\SmartTyping\smarttyping.db`. WAL mode enabled for concurrency/durability.
+SQLite เข้าถึงผ่าน Dapper ใช้ฐานข้อมูลแบบไฟล์เดียวต่อผู้ใช้หนึ่งคน:
+`%LOCALAPPDATA%\SmartTyping\smarttyping.db` เปิดใช้งานโหมด WAL เพื่อรองรับการทำงานพร้อมกันและความคงทนของข้อมูล
 
-The schema is created on first run by `DatabaseInitializer` (idempotent `CREATE TABLE IF NOT EXISTS`).
+Schema จะถูกสร้างขึ้นในการรันครั้งแรกโดย `DatabaseInitializer` (ใช้ `CREATE TABLE IF NOT EXISTS` แบบ idempotent)
 
 ## 2. Schema
 
@@ -13,23 +13,23 @@ The schema is created on first run by `DatabaseInitializer` (idempotent `CREATE 
 | Column       | Type     | Notes                          |
 |--------------|----------|--------------------------------|
 | Id           | INTEGER  | PK, autoincrement              |
-| Name         | TEXT     | NOT NULL, unique               |
-| SortOrder    | INTEGER  | NOT NULL, default 0            |
+| Name         | TEXT     | NOT NULL, ไม่ซ้ำ                |
+| SortOrder    | INTEGER  | NOT NULL, ค่าเริ่มต้น 0         |
 | CreatedUtc   | TEXT     | ISO-8601 UTC                   |
 
 ### 2.2 `snippets`
 | Column       | Type     | Notes                                            |
 |--------------|----------|--------------------------------------------------|
 | Id           | INTEGER  | PK, autoincrement                                |
-| Trigger      | TEXT     | NOT NULL, unique (case-insensitive via NOCASE)   |
+| Trigger      | TEXT     | NOT NULL, ไม่ซ้ำ (ไม่แยกตัวพิมพ์ใหญ่-เล็กด้วย NOCASE) |
 | Content      | TEXT     | NOT NULL                                         |
 | CategoryId   | INTEGER  | NULL, FK → categories(Id) ON DELETE SET NULL     |
-| IsEnabled    | INTEGER  | NOT NULL, default 1 (boolean 0/1)                |
-| UsageCount   | INTEGER  | NOT NULL, default 0                              |
+| IsEnabled    | INTEGER  | NOT NULL, ค่าเริ่มต้น 1 (boolean 0/1)            |
+| UsageCount   | INTEGER  | NOT NULL, ค่าเริ่มต้น 0                          |
 | CreatedUtc   | TEXT     | ISO-8601 UTC                                     |
 | UpdatedUtc   | TEXT     | ISO-8601 UTC                                     |
 
-Index: `UNIQUE INDEX ux_snippets_trigger ON snippets(Trigger COLLATE NOCASE)`.
+Index: `UNIQUE INDEX ux_snippets_trigger ON snippets(Trigger COLLATE NOCASE)`
 
 ### 2.3 `usage_history`
 | Column       | Type     | Notes                                   |
@@ -44,7 +44,7 @@ Index: `UNIQUE INDEX ux_snippets_trigger ON snippets(Trigger COLLATE NOCASE)`.
 | Key          | TEXT     | PK                             |
 | Value        | TEXT     | NOT NULL                       |
 
-## 3. DDL (authoritative reference)
+## 3. DDL (เอกสารอ้างอิงหลัก)
 
 ```sql
 PRAGMA journal_mode = WAL;
@@ -83,22 +83,22 @@ CREATE TABLE IF NOT EXISTS app_settings (
 );
 ```
 
-## 4. Seed data
+## 4. ข้อมูลเริ่มต้น (Seed data)
 
-On first run the initializer inserts (idempotently):
+ในการรันครั้งแรก ตัวเริ่มต้นระบบจะแทรกข้อมูลต่อไปนี้ (แบบ idempotent):
 
-- Settings: `SnippetExpansionEnabled=true`, `LanguageCorrectionEnabled=true`, `SchemaVersion=1`.
-- A `General` category.
-- Sample snippets: `/sig`, `/phone`, `/date` (`Today is {date}`) — so the feature is demonstrable immediately.
+- Settings: `SnippetExpansionEnabled=true`, `LanguageCorrectionEnabled=true`, `SchemaVersion=1`
+- category ชื่อ `General` หนึ่งรายการ
+- snippet ตัวอย่าง: `/sig`, `/phone`, `/date` (`Today is {date}`) — เพื่อให้สาธิตฟีเจอร์ได้ทันที
 
-## 5. Conventions
+## 5. ข้อกำหนดการใช้งาน (Conventions)
 
-- All timestamps stored as ISO-8601 UTC strings (`O` format) for portability.
-- Booleans stored as `0/1` integers.
-- Migrations: tracked by the `SchemaVersion` setting; the MVP only has version 1. Future
-  schema changes bump the version and run ordered migration steps in `DatabaseInitializer`.
+- timestamp ทั้งหมดจัดเก็บเป็นสตริง ISO-8601 UTC (รูปแบบ `O`) เพื่อความสามารถในการพกพาข้ามระบบ
+- ค่า boolean จัดเก็บเป็นจำนวนเต็ม `0/1`
+- Migration: ติดตามด้วยค่าตั้ง `SchemaVersion` โดย MVP มีเพียงเวอร์ชัน 1 เท่านั้น การเปลี่ยนแปลง
+  schema ในอนาคตจะเพิ่มหมายเลขเวอร์ชันและรันขั้นตอน migration ตามลำดับใน `DatabaseInitializer`
 
-## 6. Backup / reset
+## 6. การสำรองข้อมูล / รีเซ็ต
 
-The DB is a single file; users can copy it to back up. "Reset" = delete the file and restart.
-Clearing usage history = `DELETE FROM usage_history`.
+ฐานข้อมูลเป็นไฟล์เดียว ผู้ใช้สามารถคัดลอกเพื่อสำรองข้อมูลได้ "รีเซ็ต" = ลบไฟล์แล้วเริ่มโปรแกรมใหม่
+การล้างประวัติการใช้งาน = `DELETE FROM usage_history`

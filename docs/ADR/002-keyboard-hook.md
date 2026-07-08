@@ -1,50 +1,50 @@
-# ADR-002 — Keyboard hook & global hotkey strategy
+# ADR-002 — กลยุทธ์ keyboard hook และ global hotkey
 
 - Status: Accepted
 - Date: 2026-07-08
 
-## Context
+## บริบท
 
-The MVP needs a global hotkey (`Ctrl+Shift+L`) to trigger language conversion, and a path to
-capture the "last typed word" and inject converted/expanded text into the foreground app. These
-are Windows-specific, security-sensitive, and app-dependent. We must not build automatic
-as-you-type correction yet, and we must degrade gracefully.
+MVP ต้องการ global hotkey (`Ctrl+Shift+L`) เพื่อ trigger การแปลงภาษา และเส้นทางสำหรับ
+จับ "คำที่พิมพ์ล่าสุด" แล้วฉีดข้อความที่แปลง/ขยายแล้วเข้าสู่แอปที่อยู่เบื้องหน้า สิ่งเหล่านี้
+ผูกกับ Windows โดยเฉพาะ อ่อนไหวด้านความปลอดภัย และขึ้นกับแอป เรายังต้องไม่สร้างการแก้คำ
+อัตโนมัติแบบพิมพ์ไปแก้ไปในตอนนี้ และต้องลดระดับการทำงานลงอย่างนุ่มนวล
 
-## Decision
+## การตัดสินใจ
 
-1. **Two mechanisms, both isolated in Infrastructure behind interfaces:**
-   - `RegisterHotKey` (Win32) for the fixed global hotkey — cheap, reliable, no per-keystroke cost.
-   - A low-level keyboard hook (`WH_KEYBOARD_LL`) abstraction `IKeyboardHook` for capturing the
-     last-typed-word buffer. In the MVP the hook is **passive** (observe only) — it never rewrites input.
-2. **No automatic replacement.** Conversion/expansion only happens on the explicit hotkey / user action.
-3. **Text acquisition & injection are ports:** `IClipboardService` and `ITextInjector`. Injection
-   prefers direct simulated typing but **always** falls back to clipboard paste; the converted text
-   stays on the clipboard so the user can paste manually if injection is blocked.
-4. **Safety:** where a secure/password field is detectable, skip acting. All hook/injection code
-   logs-and-continues; a hook exception must never crash the app.
+1. **สองกลไก ทั้งคู่แยกอยู่ใน Infrastructure หลัง interfaces:**
+   - `RegisterHotKey` (Win32) สำหรับ global hotkey แบบตายตัว — ต้นทุนต่ำ เชื่อถือได้ ไม่มีต้นทุนต่อการกดแป้น
+   - abstraction ของ low-level keyboard hook (`WH_KEYBOARD_LL`) ชื่อ `IKeyboardHook` สำหรับจับ
+     buffer ของคำที่พิมพ์ล่าสุด ใน MVP นี้ hook เป็นแบบ **passive** (สังเกตอย่างเดียว) — ไม่เคยเขียนทับ input
+2. **ไม่มีการแทนที่อัตโนมัติ** การแปลง/ขยายเกิดขึ้นเฉพาะเมื่อกด hotkey / การกระทำของผู้ใช้อย่างชัดแจ้งเท่านั้น
+3. **การได้มาซึ่งข้อความและการฉีดข้อความเป็น ports:** `IClipboardService` และ `ITextInjector` การฉีด
+   จะเลือกการจำลองการพิมพ์โดยตรงก่อน แต่ **เสมอ** จะ fall back ไปที่การ paste ผ่าน clipboard; ข้อความที่แปลงแล้ว
+   จะอยู่บน clipboard เพื่อให้ผู้ใช้ paste เองได้หากการฉีดถูกบล็อก
+4. **ความปลอดภัย:** เมื่อใดที่ตรวจพบ field แบบ secure/password ได้ ให้ข้ามการกระทำ โค้ด hook/การฉีดทั้งหมด
+   จะ log-and-continue; exception ของ hook ต้องไม่ทำให้แอปพังเด็ดขาด
 
-## Consequences
+## ผลที่ตามมา
 
-- **Pro**: business logic is testable with fakes; OS quirks are contained; users keep control.
-- **Pro**: clipboard fallback means the feature is useful even where synthetic input is blocked.
-- **Con**: capturing selection via copy briefly touches the clipboard. We snapshot and restore the
-  **entire** clipboard (all formats) around the operation, so images/files/rich text are preserved.
-- **Con**: low-level hooks can be flagged by some security software; documented for users.
+- **ข้อดี**: ตรรกะทางธุรกิจทดสอบได้ด้วย fakes; ความประหลาดของ OS ถูกกักไว้; ผู้ใช้ยังคงควบคุมได้
+- **ข้อดี**: clipboard fallback หมายความว่าฟีเจอร์ยังใช้ได้แม้ในที่ที่ input สังเคราะห์ถูกบล็อก
+- **ข้อเสีย**: การจับ selection ผ่านการ copy แตะ clipboard ชั่วครู่ เรา snapshot และคืนค่า
+  clipboard **ทั้งหมด** (ทุก format) รอบ ๆ การทำงาน ดังนั้นรูปภาพ/ไฟล์/rich text จึงถูกรักษาไว้
+- **ข้อเสีย**: low-level hooks อาจถูกซอฟต์แวร์ความปลอดภัยบางตัวตั้งค่าสถานะเตือน; มีการบันทึกไว้ให้ผู้ใช้ทราบ
 
-## Secure-field handling (implemented)
+## การจัดการ secure-field (implement แล้ว)
 
-Before capturing a selection or injecting text, the coordinators query `ISecureInputDetector`. The
-Windows implementation resolves the foreground window's focused control via `GetGUIThreadInfo` and
-checks the `ES_PASSWORD` style; if set, the action is skipped (nothing is copied or pasted). This is
-**best-effort**: it reliably covers native Win32 `Edit` password boxes, but browsers, Electron, and
-UWP apps do not expose that style, so their password fields cannot be detected. A `false` result
-therefore means "not known to be secure", not a guarantee. Broader coverage (e.g. UI Automation
-`IsPassword`) is a future enhancement.
+ก่อนจับ selection หรือฉีดข้อความ ตัว coordinators จะ query `ISecureInputDetector` การ
+implement บน Windows จะหา control ที่ focus อยู่ของ foreground window ผ่าน `GetGUIThreadInfo` และ
+ตรวจสอบ style `ES_PASSWORD`; หากตั้งอยู่ การกระทำจะถูกข้าม (ไม่มีการ copy หรือ paste ใด ๆ) นี่เป็นแบบ
+**best-effort**: มันครอบคลุมกล่อง password `Edit` แบบ native Win32 ได้อย่างเชื่อถือได้ แต่ browsers, Electron และ
+UWP apps ไม่เปิดเผย style นั้น ดังนั้น field password ของพวกมันจึงตรวจไม่พบ ผลลัพธ์ `false`
+จึงหมายความว่า "ไม่ทราบว่าเป็น secure" ไม่ใช่การรับประกัน การครอบคลุมที่กว้างขึ้น (เช่น UI Automation
+`IsPassword`) เป็นการพัฒนาต่อยอดในอนาคต
 
-## Alternatives considered
+## ทางเลือกที่พิจารณา
 
-- **UI Automation to read selection** — cleaner in theory but inconsistent across apps. Kept as a
-  future enhancement, not the MVP path.
-- **Always inject by simulated keystrokes** — fails in apps that block `SendInput`; clipboard paste
-  is the more reliable baseline. We do both, paste-first as fallback.
-- **Active hook that rewrites keys inline** — that is automatic correction, explicitly out of scope.
+- **ใช้ UI Automation เพื่ออ่าน selection** — สะอาดกว่าในทางทฤษฎีแต่ไม่สม่ำเสมอข้ามแอป เก็บไว้เป็น
+  การพัฒนาต่อยอดในอนาคต ไม่ใช่เส้นทางของ MVP
+- **ฉีดด้วยการจำลองการกดแป้นเสมอ** — ล้มเหลวในแอปที่บล็อก `SendInput`; การ paste ผ่าน clipboard
+  เป็น baseline ที่เชื่อถือได้มากกว่า เราทำทั้งสองอย่าง โดย paste ก่อนเป็น fallback
+- **hook แบบ active ที่เขียนทับแป้นแบบ inline** — นั่นคือการแก้คำอัตโนมัติ ซึ่งอยู่นอกขอบเขตอย่างชัดเจน

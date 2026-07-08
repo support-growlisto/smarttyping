@@ -1,14 +1,14 @@
 # 05 — UI / UX
 
-## 1. Principles
+## 1. หลักการ
 
-- **Explicit, not surprising** — nothing replaces text without a user action in the MVP.
-- **Stay out of the way** — lives mostly in the tray; the main window is a manager, not a constant presence.
-- **Bilingual-friendly** — Thai and English labels read cleanly; fonts render Thai correctly.
+- **ชัดเจน ไม่ทำให้ประหลาดใจ** — ใน MVP จะไม่มีการแทนที่ข้อความใด ๆ โดยที่ผู้ใช้ไม่ได้สั่งการก่อน
+- **ไม่กีดขวางการทำงาน** — ส่วนใหญ่ทำงานอยู่ใน tray หน้าต่างหลักเป็นตัวจัดการ ไม่ใช่สิ่งที่ปรากฏอยู่ตลอดเวลา
+- **รองรับสองภาษา** — ป้ายกำกับภาษาไทยและอังกฤษอ่านได้ชัดเจน ฟอนต์แสดงผลภาษาไทยได้ถูกต้อง
 
-## 2. Windows & views
+## 2. หน้าต่างและมุมมอง
 
-### 2.1 Main window (Snippet Manager)
+### 2.1 หน้าต่างหลัก (Snippet Manager)
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ SmartTyping                                   [_] [□] [x] │
@@ -22,12 +22,12 @@
 │  [Settings]  │  └─────────────────────────────────────┘  │
 └──────────────┴───────────────────────────────────────────┘
 ```
-- Left: category list (with "All"). Selecting filters the grid.
-- Center: searchable snippet grid — Trigger, Content preview, Usage count, Enabled checkbox.
-- Toolbar: Add, Edit, Delete, Search.
-- Bottom-left: Settings button.
+- ซ้าย: รายการ category (พร้อมตัวเลือก "All") การเลือกจะกรองข้อมูลในกริด
+- กลาง: กริด snippet ที่ค้นหาได้ — Trigger, ตัวอย่าง Content, จำนวนการใช้งาน, checkbox เปิด/ปิดใช้งาน
+- แถบเครื่องมือ: Add, Edit, Delete, Search
+- ล่างซ้าย: ปุ่ม Settings
 
-### 2.2 Add/Edit snippet dialog
+### 2.2 ไดอะล็อกเพิ่ม/แก้ไข snippet
 ```
 ┌── Add Snippet ───────────────────────────┐
 │ Trigger:  [ /phone            ]          │
@@ -42,10 +42,10 @@
 │                      [ Cancel ] [ Save ] │
 └──────────────────────────────────────────┘
 ```
-- Validates: trigger non-empty and unique; content non-empty.
-- Shows available template variables as hint chips.
+- ตรวจสอบความถูกต้อง: trigger ต้องไม่ว่างและต้องไม่ซ้ำ, content ต้องไม่ว่าง
+- แสดงตัวแปร template ที่ใช้ได้เป็น chip คำใบ้
 
-### 2.3 Settings view
+### 2.3 มุมมองการตั้งค่า (Settings)
 ```
 ┌── Settings ──────────────────────────────┐
 │ [x] Enable snippet expansion             │
@@ -57,41 +57,41 @@
 ```
 
 ### 2.4 System tray
-- Icon in the notification area.
-- Context menu: **Show manager**, **Snippet expansion ✓**, **Language correction ✓**, **Exit**.
-- Left-click: show/hide the main window. Closing the main window hides to tray (does not exit).
+- ไอคอนในพื้นที่แจ้งเตือน (notification area)
+- เมนูคลิกขวา: **Show manager**, **Snippet expansion ✓**, **Language correction ✓**, **Exit**
+- คลิกซ้าย: แสดง/ซ่อนหน้าต่างหลัก การปิดหน้าต่างหลักจะซ่อนลง tray (ไม่ใช่ปิดโปรแกรม)
 
-## 3. Interaction model
+## 3. รูปแบบการโต้ตอบ (Interaction model)
 
 | Action                     | Trigger                                  |
 |----------------------------|------------------------------------------|
-| Expand snippet             | Select the trigger (e.g. `/phone`), press `Ctrl + Shift + E` |
-| Convert layout             | `Ctrl + Shift + L` on the selection       |
-| Open manager               | Tray left-click / menu                   |
-| Toggle a feature           | Tray menu or Settings                    |
+| ขยาย snippet               | เลือก trigger (เช่น `/phone`) แล้วกด `Ctrl + Shift + E` |
+| แปลง layout                | `Ctrl + Shift + L` บนข้อความที่เลือกไว้     |
+| เปิดตัวจัดการ              | คลิกซ้ายที่ tray / เมนู                    |
+| สลับเปิด-ปิดฟีเจอร์         | เมนู tray หรือ Settings                    |
 
-## 4. Visual style
+## 4. สไตล์ภาพ (Visual style)
 
-- WPF default theme, light; system accent where available.
-- Font: Segoe UI + a Thai-capable fallback (Windows renders Thai via font fallback).
-- Minimum window size 720×480; grid rows comfortable for multiline content preview (single-line, ellipsis).
+- ธีมเริ่มต้นของ WPF แบบสว่าง ใช้สี accent ของระบบเมื่อมีให้ใช้
+- ฟอนต์: Segoe UI พร้อมฟอนต์สำรองที่รองรับภาษาไทย (Windows แสดงผลภาษาไทยผ่านกลไก font fallback)
+- ขนาดหน้าต่างขั้นต่ำ 720×480; แถวในกริดมีความสูงพอเหมาะสำหรับตัวอย่าง content หลายบรรทัด (แสดงบรรทัดเดียว ตัดด้วยจุดไข่ปลา)
 
-### 4.1 Localization
+### 4.1 การแปลภาษา (Localization)
 
-- UI language is **Thai by default**, switchable to English live from Settings (persisted in `app_settings`).
-- All window text, the tray menu, and status/dialog messages are localized through `LocalizationManager`
-  (`src/SmartTyping.UI/Localization/`), which XAML consumes via an indexer binding
-  (`{Binding [Key], Source={x:Static loc:LocalizationManager.Instance}}`).
-- Only UI strings are translated; date/number formatting continues to follow the system culture.
-- Adding a language = extend the string table with a new column; adding a string = one table entry + its binding.
+- ภาษา UI **เป็นภาษาไทยโดยค่าเริ่มต้น** สามารถสลับเป็นภาษาอังกฤษได้ทันทีจาก Settings (บันทึกไว้ใน `app_settings`)
+- ข้อความในหน้าต่างทั้งหมด, เมนู tray และข้อความสถานะ/ไดอะล็อกถูกแปลผ่าน `LocalizationManager`
+  (`src/SmartTyping.UI/Localization/`) ซึ่ง XAML เรียกใช้ผ่านการ bind แบบ indexer
+  (`{Binding [Key], Source={x:Static loc:LocalizationManager.Instance}}`)
+- แปลเฉพาะสตริง UI เท่านั้น ส่วนการจัดรูปแบบวันที่/ตัวเลขยังคงเป็นไปตาม culture ของระบบ
+- การเพิ่มภาษา = ขยายตารางสตริงด้วย column ใหม่; การเพิ่มสตริง = เพิ่มหนึ่งรายการในตารางพร้อม binding ของมัน
 
-## 5. Accessibility & feedback
+## 5. การเข้าถึงและการตอบสนอง (Accessibility & feedback)
 
-- All actions reachable by keyboard; standard tab order.
-- Toast/statusbar confirmation after expansion or conversion ("Converted", "Expanded /sig").
-- Errors surface as non-blocking status messages, never silent failures.
+- ทุกการกระทำเข้าถึงได้ด้วยคีย์บอร์ด; ลำดับ tab เป็นมาตรฐาน
+- มี toast/แถบสถานะยืนยันหลังการขยายหรือการแปลง ("Converted", "Expanded /sig")
+- ข้อผิดพลาดจะแสดงเป็นข้อความสถานะแบบไม่ปิดกั้นการทำงาน ไม่มีการล้มเหลวแบบเงียบ ๆ
 
-## 6. Empty & error states
+## 6. สถานะว่างและข้อผิดพลาด (Empty & error states)
 
-- No snippets → friendly empty state with an "Add your first snippet" call to action.
-- Injection blocked (secure field) → status message suggesting manual paste; clipboard still holds the result.
+- ไม่มี snippet → แสดงสถานะว่างที่เป็นมิตรพร้อมปุ่มเชิญชวน "Add your first snippet"
+- การแทรกถูกบล็อก (secure field) → ข้อความสถานะแนะนำให้วางด้วยตนเอง โดย clipboard ยังคงเก็บผลลัพธ์ไว้

@@ -1,76 +1,76 @@
-# 08 — Release Plan
+# 08 — แผนการปล่อยเวอร์ชัน (Release Plan)
 
-## 1. Versioning
+## 1. การกำหนดเวอร์ชัน (Versioning)
 
-Semantic Versioning (`MAJOR.MINOR.PATCH`). The MVP targets **0.1.0**. Version is set in
-`Directory.Build.props` and surfaced in the About/tray tooltip.
+ใช้ Semantic Versioning (`MAJOR.MINOR.PATCH`) โดย MVP ตั้งเป้าที่ **0.1.0** เวอร์ชันถูกกำหนดไว้ใน
+`Directory.Build.props` และแสดงผลในหน้า About/tooltip ของ tray
 
-## 2. Release channels
+## 2. ช่องทางการปล่อยเวอร์ชัน (Release channels)
 
-| Channel | Purpose                          | Cadence          |
+| ช่องทาง | วัตถุประสงค์                       | รอบการปล่อย        |
 |---------|----------------------------------|------------------|
-| dev     | local builds, PR validation      | continuous       |
-| preview | internal testers                 | per milestone    |
-| stable  | end users                        | on milestone GA  |
+| dev     | บิลด์ในเครื่อง, ตรวจสอบ PR         | ต่อเนื่อง          |
+| preview | ผู้ทดสอบภายใน                     | ต่อ milestone     |
+| stable  | ผู้ใช้งานปลายทาง                   | เมื่อ milestone GA |
 
-## 3. Build & publish
+## 3. การบิลด์และเผยแพร่ (Build & publish)
 
-Framework-dependent (dev):
+แบบ framework-dependent (dev):
 ```powershell
 dotnet build -c Release
 ```
 
-Self-contained single-file (release candidate):
+แบบ self-contained single-file (release candidate):
 ```powershell
 dotnet publish src/SmartTyping.UI -c Release -r win-x64 `
   --self-contained true `
   -p:PublishSingleFile=true `
   -p:IncludeNativeLibrariesForSelfExtract=true
 ```
-Output: `src/SmartTyping.UI/bin/Release/net9.0-windows/win-x64/publish/`.
+ผลลัพธ์: `src/SmartTyping.UI/bin/Release/net9.0-windows/win-x64/publish/`
 
-## 4. Packaging (MVP)
+## 4. การแพ็กเกจ (Packaging) (MVP)
 
-- Ship the single-file `SmartTyping.exe` from the publish profile (zip optional).
-- **winget**: portable manifests live in `packaging/winget/` — fill the release URL + SHA-256, then
-  `winget validate` / submit so users can `winget install SmartTyping.SmartTyping`. See that folder's README.
-- **Installer (Inno Setup)**: `packaging/installer/SmartTyping.iss` + `scripts/build-installer.ps1`
-  produce a per-user `SmartTyping-Setup-<version>.exe` (Start Menu / optional Desktop shortcut,
-  uninstaller). Requires Inno Setup 6 (`iscc`). MSIX/Store is deferred (needs a signing cert).
+- ส่งมอบไฟล์เดียว `SmartTyping.exe` จาก publish profile (จะบีบอัดเป็น zip ก็ได้)
+- **winget**: portable manifests อยู่ใน `packaging/winget/` — กรอก release URL + SHA-256 แล้ว
+  `winget validate` / submit เพื่อให้ผู้ใช้สามารถ `winget install SmartTyping.SmartTyping` ได้ ดู README ในโฟลเดอร์นั้น
+- **ตัวติดตั้ง (Inno Setup)**: `packaging/installer/SmartTyping.iss` + `scripts/build-installer.ps1`
+  สร้างตัวติดตั้งแบบ per-user `SmartTyping-Setup-<version>.exe` (Start Menu / shortcut บน Desktop แบบเลือกได้,
+  ตัวถอนการติดตั้ง) ต้องใช้ Inno Setup 6 (`iscc`) ส่วน MSIX/Store ถูกเลื่อนออกไป (ต้องใช้ signing cert)
 
-## 4a. Updates
+## 4a. การอัปเดต (Updates)
 
-- **In-app update check** (opt-in, off by default — the app's only network feature). When enabled,
-  it queries the GitHub "latest release" endpoint on startup and via Settings -> "Check now",
-  comparing versions with the pure `UpdateComparer`. If newer, it offers to open the download page.
-- Point `WindowsUpdateChecker.LatestReleaseUrl` at the real repository before release.
+- **การตรวจสอบอัปเดตในแอป** (opt-in, ปิดไว้เป็นค่าเริ่มต้น — เป็นฟีเจอร์เดียวของแอปที่ใช้เครือข่าย) เมื่อเปิดใช้งาน
+  มันจะสอบถามที่ GitHub endpoint "latest release" ตอนเริ่มโปรแกรมและผ่าน Settings -> "Check now"
+  โดยเปรียบเทียบเวอร์ชันด้วย `UpdateComparer` แบบ pure หากมีเวอร์ชันใหม่กว่า จะเสนอให้เปิดหน้าดาวน์โหลด
+- ตั้งค่า `WindowsUpdateChecker.LatestReleaseUrl` ให้ชี้ไปยัง repository จริงก่อนปล่อยเวอร์ชัน
 
-## 5. Pre-release checklist
+## 5. รายการตรวจสอบก่อนปล่อยเวอร์ชัน (Pre-release checklist)
 
-- [ ] `dotnet test` green.
-- [ ] Manual hook/injection checklist (see Test Plan §4) passes on Win10 + Win11.
-- [ ] Version bumped in `Directory.Build.props`.
-- [ ] `CHANGELOG.md` updated; `[Unreleased]` moved under the new version + date.
-- [ ] Fresh-machine smoke test (no dev tools): DB self-initializes, app runs.
-- [ ] Logs contain no unhandled exceptions during smoke.
+- [ ] `dotnet test` ผ่านทั้งหมด (green)
+- [ ] รายการตรวจสอบ hook/injection แบบ manual (ดู Test Plan §4) ผ่านทั้งบน Win10 + Win11
+- [ ] เพิ่มเวอร์ชันใน `Directory.Build.props`
+- [ ] อัปเดต `CHANGELOG.md` แล้ว; ย้าย `[Unreleased]` ไปอยู่ใต้เวอร์ชันใหม่ + วันที่
+- [ ] ทดสอบ smoke test บนเครื่องใหม่ (ไม่มี dev tools): DB เริ่มต้นตัวเองได้, แอปทำงานได้
+- [ ] logs ไม่มี unhandled exception ใด ๆ ระหว่างการ smoke test
 
-## 6. Release steps
+## 6. ขั้นตอนการปล่อยเวอร์ชัน (Release steps)
 
-1. Tag: `git tag v0.1.0 && git push --tags`.
-2. Build the self-contained publish artifact.
-3. Zip and attach to the release page with `CHANGELOG` excerpt.
-4. Smoke-test the artifact on a clean VM.
+1. ติด tag: `git tag v0.1.0 && git push --tags`
+2. บิลด์ publish artifact แบบ self-contained
+3. บีบอัดเป็น zip และแนบไปกับหน้า release พร้อมข้อความส่วนตัดตอนจาก `CHANGELOG`
+4. ทดสอบ smoke-test กับ artifact บน VM ที่สะอาด
 
-## 7. Rollback
+## 7. การย้อนกลับ (Rollback)
 
-Artifacts are immutable per tag. To roll back, re-publish the previous tag's zip. User data
-(the SQLite DB) is forward/backward compatible within a MINOR line; schema bumps are additive.
+Artifacts นั้น immutable ต่อแต่ละ tag หากต้องการย้อนกลับ ให้ re-publish zip ของ tag ก่อนหน้า ข้อมูลผู้ใช้
+(SQLite DB) เข้ากันได้ทั้งแบบ forward/backward ภายในสาย MINOR เดียวกัน; การเพิ่มเวอร์ชัน schema เป็นแบบเพิ่มเข้ามา (additive)
 
 ## 8. Milestones
 
-| Version | Contents                                                     |
+| เวอร์ชัน | เนื้อหา                                                        |
 |---------|--------------------------------------------------------------|
-| 0.1.0   | MVP: snippets + templates + layout conversion + settings.    |
-| 0.2.0   | Configurable hotkeys, start-with-Windows, tray polish.       |
-| 0.3.0   | Repository integration tests, import/export snippets.        |
-| 1.0.0   | Hardened injection, installer, optional auto-detect (opt-in). |
+| 0.1.0   | MVP: snippets + templates + การแปลง layout + settings         |
+| 0.2.0   | hotkeys ปรับแต่งได้, start-with-Windows, ปรับปรุง tray          |
+| 0.3.0   | integration tests ของ repository, import/export snippets      |
+| 1.0.0   | injection ที่แข็งแกร่งขึ้น, ตัวติดตั้ง, auto-detect แบบเลือกได้ (opt-in) |

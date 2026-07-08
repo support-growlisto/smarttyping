@@ -1,12 +1,12 @@
-# 07 — Development Guide
+# 07 — คู่มือการพัฒนา
 
-## 1. Prerequisites
+## 1. สิ่งที่ต้องมีก่อน
 
 - Windows 10/11
 - .NET 9 SDK (`dotnet --version` → 9.x)
-- An IDE: Visual Studio 2022 (17.12+), JetBrains Rider, or VS Code + C# Dev Kit.
+- IDE สักตัว: Visual Studio 2022 (17.12+), JetBrains Rider หรือ VS Code + C# Dev Kit
 
-## 2. Getting started
+## 2. เริ่มต้นใช้งาน
 
 ```powershell
 git clone <repo> smarttyping
@@ -16,54 +16,54 @@ dotnet build
 dotnet run --project src/SmartTyping.UI
 ```
 
-Run tests:
+รันการทดสอบ:
 
 ```powershell
 dotnet test
 ```
 
-## 3. Solution layout
+## 3. โครงสร้าง solution
 
-See [`03_Architecture.md`](03_Architecture.md). Golden rules:
+ดูที่ [`03_Architecture.md`](03_Architecture.md) กฎเหล็ก:
 
-- **Domain** references nothing but Shared. No SQLite, no WPF, no Windows API.
-- **Application** defines interfaces (ports) and pure services. It never references Infrastructure.
-- **Infrastructure** implements Application ports. All P/Invoke lives here.
-- **UI** is the only composition root (DI wiring in `App.xaml.cs`).
-- **Shared** holds tiny cross-cutting primitives with no external dependencies.
+- **Domain** อ้างอิงได้เฉพาะ Shared เท่านั้น ไม่มี SQLite, ไม่มี WPF, ไม่มี Windows API
+- **Application** นิยาม interfaces (ports) และ pure services ห้ามอ้างอิง Infrastructure เด็ดขาด
+- **Infrastructure** implement ports ของ Application ทุกส่วนที่เป็น P/Invoke อยู่ที่นี่
+- **UI** เป็น composition root เพียงจุดเดียว (เดินสาย DI ใน `App.xaml.cs`)
+- **Shared** เก็บ primitives เล็กๆ ที่ใช้ร่วมกันข้ามส่วน โดยไม่มี dependency ภายนอก
 
-## 4. Coding standards
+## 4. มาตรฐานการเขียนโค้ด
 
-- Nullable reference types **on**; fix warnings, don't suppress.
-- File-scoped namespaces; `using` outside the namespace.
-- `async`/`await` for all I/O (DB, clipboard, injection). Pure mapping stays synchronous.
-- Constructor injection everywhere; no service locator, no `new` of infrastructure in UI/App layers.
-- No static business logic except pure constant tables (keyboard maps) and pure helpers.
-- Meaningful names; XML doc-comments only where behavior is non-obvious.
-- Keep methods small; prefer `Result<T>` over throwing across layer boundaries.
+- เปิด nullable reference types **on**; แก้ warnings อย่า suppress
+- ใช้ file-scoped namespaces; วาง `using` ไว้นอก namespace
+- ใช้ `async`/`await` สำหรับงาน I/O ทั้งหมด (DB, clipboard, injection) ส่วน pure mapping ยังคงเป็น synchronous
+- ใช้ constructor injection ทุกที่; ไม่มี service locator, ไม่ `new` infrastructure ในเลเยอร์ UI/App
+- ห้ามมี static business logic ยกเว้นตารางค่าคงที่ล้วนๆ (keyboard maps) และ pure helpers
+- ตั้งชื่อให้มีความหมาย; ใส่ XML doc-comments เฉพาะจุดที่พฤติกรรมไม่ชัดเจน
+- เขียน method ให้เล็ก; เลือกใช้ `Result<T>` แทนการโยน exception ข้ามขอบเขตเลเยอร์
 
-## 5. Adding a feature (recipe)
+## 5. การเพิ่มฟีเจอร์ (สูตรทำ)
 
-1. Model it in **Domain** (entity/value object/enum) if it's a concept.
-2. Define the **port(s)** and **DTOs** in Application; write the service using the ports.
-3. Write **unit tests** for the service with in-memory fakes.
-4. Implement the port(s) in **Infrastructure**.
-5. Wire DI + UI in **UI**.
-6. Update `CHANGELOG.md` and relevant docs.
+1. สร้างโมเดลใน **Domain** (entity/value object/enum) ถ้ามันเป็นแนวคิดหนึ่ง
+2. นิยาม **port(s)** และ **DTOs** ใน Application; เขียน service โดยใช้ ports เหล่านั้น
+3. เขียน **unit tests** ให้ service ด้วย fakes แบบ in-memory
+4. Implement port(s) ใน **Infrastructure**
+5. เดินสาย DI + UI ใน **UI**
+6. อัปเดต `CHANGELOG.md` และเอกสารที่เกี่ยวข้อง
 
-## 6. Working with the database
+## 6. การทำงานกับฐานข้อมูล
 
-- Schema changes go into `DatabaseInitializer` behind a version bump (`SchemaVersion`).
-- Never hand-edit the shipped DB; treat it as user data.
-- Local dev DB lives at `%LOCALAPPDATA%\SmartTyping\smarttyping.db`. Delete it to reset.
+- การเปลี่ยนแปลง schema ให้ใส่ไว้ใน `DatabaseInitializer` พร้อมกับ bump เวอร์ชัน (`SchemaVersion`)
+- ห้ามแก้ไข DB ที่ ship ไปแล้วด้วยมือ; ให้ถือว่าเป็นข้อมูลของผู้ใช้
+- DB สำหรับ dev บนเครื่องอยู่ที่ `%LOCALAPPDATA%\SmartTyping\smarttyping.db` ลบทิ้งเพื่อรีเซ็ต
 
-## 7. Windows input code
+## 7. โค้ดรับ input ของ Windows
 
-- Hooks/injection are isolated in Infrastructure behind `IKeyboardHook`, `ITextInjector`,
-  `IClipboardService`. Do not call `user32.dll` from anywhere else.
-- Always log-and-continue on OS faults; never let a hook exception crash the app.
+- Hooks/injection ถูกแยกไว้ใน Infrastructure หลัง `IKeyboardHook`, `ITextInjector`,
+  `IClipboardService` ห้ามเรียก `user32.dll` จากที่อื่น
+- ให้ log-and-continue เสมอเมื่อเกิด OS faults; อย่าปล่อยให้ hook exception ทำให้แอปแครช
 
-## 8. Commit convention (Conventional Commits)
+## 8. ข้อตกลงการ commit (Conventional Commits)
 
 ```
 feat: add snippet usage counter
@@ -74,20 +74,20 @@ test: add converter round-trip cases
 chore: bump Serilog to x.y.z
 ```
 
-Branch names: `feat/<slug>`, `fix/<slug>`, `docs/<slug>`.
+ชื่อ branch: `feat/<slug>`, `fix/<slug>`, `docs/<slug>`
 
-## 9. Definition of Done
+## 9. นิยามของคำว่าเสร็จ (Definition of Done)
 
-- Code compiles with no new warnings; nullable clean.
-- Unit tests added/updated and green.
-- Docs/CHANGELOG updated.
-- Manual smoke test for anything touching hooks/injection.
+- โค้ดคอมไพล์ผ่านโดยไม่มี warning ใหม่; nullable สะอาด
+- เพิ่ม/อัปเดต unit tests แล้วและผ่านเป็นสีเขียว
+- อัปเดตเอกสาร/CHANGELOG แล้ว
+- ทำ manual smoke test สำหรับทุกอย่างที่แตะต้อง hooks/injection
 
-## 10. Troubleshooting
+## 10. การแก้ปัญหา (Troubleshooting)
 
-| Symptom                              | Likely cause / fix                                  |
+| อาการ                                | สาเหตุที่เป็นไปได้ / วิธีแก้                          |
 |--------------------------------------|-----------------------------------------------------|
-| Hotkey does nothing                  | Another app owns `Ctrl+Shift+L`; check logs.        |
-| Injection inserts nothing            | Target blocks synthetic input; clipboard has result — paste manually. |
-| DB errors on startup                 | Corrupt/locked file; close other instances or delete the DB to reset. |
-| Thai renders as boxes                | Missing Thai font fallback; verify system Thai support. |
+| กด hotkey แล้วไม่มีอะไรเกิดขึ้น        | แอปอื่นครอบครอง `Ctrl+Shift+L` อยู่; ตรวจสอบ logs   |
+| Injection ไม่แทรกอะไรเลย              | เป้าหมายบล็อก synthetic input; ผลลัพธ์อยู่ใน clipboard แล้ว — วางเอง |
+| DB เกิด error ตอนเริ่มโปรแกรม          | ไฟล์เสียหาย/ถูกล็อก; ปิด instance อื่นหรือลบ DB เพื่อรีเซ็ต |
+| ภาษาไทยแสดงเป็นกล่องสี่เหลี่ยม         | ขาด font fallback ภาษาไทย; ตรวจสอบว่าระบบรองรับภาษาไทย |

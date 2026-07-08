@@ -1,72 +1,72 @@
-# 00 — Project Charter
+# 00 — กฎบัตรโครงการ
 
-## Project
+## โครงการ
 
-**SmartTyping Desktop** — a Windows productivity utility combining Thai/English
-language correction with text expansion and templates.
+**SmartTyping Desktop** — โปรแกรมอรรถประโยชน์เพิ่มประสิทธิภาพการทำงานบน Windows ที่รวม
+การแก้ไขภาษาไทย/อังกฤษเข้ากับการขยายข้อความและเทมเพลต
 
-## Vision
+## วิสัยทัศน์
 
-Let bilingual (Thai/English) users type faster and fix wrong-keyboard-layout mistakes
-without breaking flow or leaving their current application — all locally, with explicit
-user control and no automatic destructive edits.
+ให้ผู้ใช้สองภาษา (ไทย/อังกฤษ) พิมพ์ได้เร็วขึ้นและแก้ข้อผิดพลาดจากการพิมพ์ผิดผังแป้นพิมพ์
+โดยไม่ขัดจังหวะการทำงานหรือต้องออกจากแอปพลิเคชันที่ใช้อยู่ — ทำงานในเครื่องทั้งหมด โดยผู้ใช้
+ควบคุมอย่างชัดเจนและไม่มีการแก้ไขแบบทำลายข้อมูลโดยอัตโนมัติ
 
-## Problem statement
+## คำอธิบายปัญหา
 
-- Bilingual users frequently type in the wrong keyboard layout (Thai text comes out as
-  gibberish English, or vice versa) and must retype.
-- Repetitive text (phone numbers, addresses, greetings, boilerplate) is retyped constantly.
-- Existing tools are either cloud-bound, subscription-locked, or do aggressive automatic
-  replacement that users do not trust.
+- ผู้ใช้สองภาษามักพิมพ์ผิดผังแป้นพิมพ์อยู่บ่อยครั้ง (ข้อความไทยออกมาเป็นภาษาอังกฤษที่อ่านไม่รู้เรื่อง
+  หรือกลับกัน) และต้องพิมพ์ใหม่
+- ข้อความที่ต้องใช้ซ้ำ ๆ (เบอร์โทรศัพท์ ที่อยู่ คำทักทาย ข้อความสำเร็จรูป) ถูกพิมพ์ซ้ำอยู่ตลอดเวลา
+- เครื่องมือที่มีอยู่ไม่ก็ผูกกับคลาวด์ ต้องสมัครสมาชิก หรือทำการแทนที่อัตโนมัติแบบก้าวร้าว
+  ซึ่งผู้ใช้ไม่ไว้วางใจ
 
-## Goals (MVP)
+## เป้าหมาย (MVP)
 
-1. Convert text between Thai Kedmanee and English QWERTY on an explicit hotkey.
-2. Expand short triggers (e.g. `/phone`) into configured text with categories and usage tracking.
-3. Support template variables (`{date}`, `{time}`, `{clipboard}`).
-4. Keep everything local (SQLite), safe (no auto-replace), and testable.
+1. แปลงข้อความระหว่างผังแป้นพิมพ์ไทย Kedmanee และอังกฤษ QWERTY ด้วย hotkey ที่กดอย่างชัดเจน
+2. ขยาย trigger สั้น ๆ (เช่น `/phone`) ให้เป็นข้อความที่ตั้งค่าไว้ พร้อมหมวดหมู่และการติดตามการใช้งาน
+3. รองรับตัวแปรเทมเพลต (`{date}`, `{time}`, `{clipboard}`)
+4. เก็บทุกอย่างไว้ในเครื่อง (SQLite) ปลอดภัย (ไม่มีการแทนที่อัตโนมัติ) และทดสอบได้
 
-## Non-goals (MVP)
+## สิ่งที่ไม่ใช่เป้าหมาย (MVP)
 
-- Automatic as-you-type correction.
-- AI-assisted features.
-- Cloud sync / multi-device.
-- Plugin ecosystem.
-- Manipulating password fields aggressively.
+- การแก้ไขอัตโนมัติขณะพิมพ์
+- ฟีเจอร์ที่ใช้ AI ช่วย
+- การซิงก์คลาวด์ / หลายอุปกรณ์
+- ระบบนิเวศปลั๊กอิน
+- การจัดการช่องรหัสผ่านแบบก้าวร้าว
 
-## Success criteria
+## เกณฑ์ความสำเร็จ
 
-- A user can create, edit, enable/disable, and categorize snippets.
-- `Ctrl+Shift+L` converts the current selection / last word between layouts correctly for common cases.
-- Snippet expansion inserts the resolved text (including template variables) into the active app.
-- Core logic (conversion, snippet lookup, template replacement) is covered by passing unit tests.
-- App runs on a clean Windows 10/11 machine with the .NET 9 runtime.
+- ผู้ใช้สามารถสร้าง แก้ไข เปิด/ปิด และจัดหมวดหมู่ snippet ได้
+- `Ctrl+Shift+L` แปลงข้อความที่เลือกอยู่ / คำสุดท้ายระหว่างผังแป้นพิมพ์ได้อย่างถูกต้องในกรณีทั่วไป
+- การขยาย snippet แทรกข้อความที่แก้ไขแล้ว (รวมถึงตัวแปรเทมเพลต) เข้าไปในแอปที่ใช้งานอยู่
+- ตรรกะหลัก (การแปลง การค้นหา snippet การแทนที่ template) ครอบคลุมด้วย unit test ที่ผ่าน
+- แอปทำงานบนเครื่อง Windows 10/11 ที่สะอาดพร้อม .NET 9 runtime
 
-## Stakeholders
+## ผู้มีส่วนได้ส่วนเสีย
 
-| Role            | Responsibility                                  |
+| บทบาท           | ความรับผิดชอบ                                   |
 |-----------------|-------------------------------------------------|
-| Product owner   | Scope, priorities, acceptance                   |
-| Developer(s)    | Implementation, tests, docs                     |
-| End users       | Bilingual Thai/English typists on Windows       |
+| Product owner   | ขอบเขต ลำดับความสำคัญ การยอมรับ                  |
+| ผู้พัฒนา        | การพัฒนา การทดสอบ เอกสาร                         |
+| ผู้ใช้ปลายทาง   | ผู้พิมพ์สองภาษาไทย/อังกฤษบน Windows              |
 
-## Constraints
+## ข้อจำกัด
 
-- Windows 10/11 only; .NET 9; C#/WPF/MVVM.
-- Local-first: no network calls in the MVP.
-- Explicit-action model: no silent global replacement.
+- Windows 10/11 เท่านั้น; .NET 9; C#/WPF/MVVM
+- Local-first: ไม่มีการเรียกเครือข่ายใน MVP
+- โมเดลลงมือชัดเจน: ไม่มีการแทนที่แบบเงียบ ๆ ทั่วทั้งระบบ
 
-## High-level timeline
+## ไทม์ไลน์ภาพรวม
 
-| Phase | Outcome                                                        |
+| เฟส   | ผลลัพธ์                                                        |
 |-------|---------------------------------------------------------------|
-| 0     | Repository skeleton, docs, architecture (this delivery).      |
-| 1     | Snippet CRUD + expansion + template variables (usable).       |
-| 2     | Language converter hotkey end-to-end.                          |
-| 3     | Settings, tray polish, packaging.                              |
+| 0     | โครงสร้าง repository เอกสาร สถาปัตยกรรม (การส่งมอบครั้งนี้)     |
+| 1     | Snippet CRUD + การขยาย + ตัวแปรเทมเพลต (ใช้งานได้)             |
+| 2     | hotkey ตัวแปลงภาษาแบบครบวงจร                                   |
+| 3     | การตั้งค่า ปรับปรุง tray การแพ็กเกจ                            |
 
-## Risks
+## ความเสี่ยง
 
-- Global keyboard hooks / text injection are OS-sensitive and app-dependent — mitigate by
-  isolating them behind interfaces and shipping a clipboard-paste fallback.
-- Layout conversion edge cases (dead keys, shifted symbols) — mitigate with a well-tested mapping table.
+- Global keyboard hooks / การฉีดข้อความ ขึ้นอยู่กับ OS และแอป — บรรเทาโดย
+  แยกมันไว้หลัง interface และจัดส่ง fallback แบบ clipboard-paste
+- กรณีขอบของการแปลงผังแป้นพิมพ์ (dead keys, สัญลักษณ์ที่ต้องกด shift) — บรรเทาด้วยตาราง mapping ที่ทดสอบมาอย่างดี
