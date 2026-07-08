@@ -1,161 +1,167 @@
 # SmartTyping Desktop
 
-A Windows desktop productivity app that combines **Thai/English language correction**
-(RightLang-style) with **text expansion and templates** (Text Blaze-style).
+แอปเพิ่มประสิทธิภาพการพิมพ์บน Windows ที่รวม **การแก้ภาษาไทย/อังกฤษ** (แนว RightLang)
+เข้ากับ **การขยายข้อความและเทมเพลต** (แนว Text Blaze)
 
-Type a shortcut like `/phone` and it expands to your configured text. Mistype Thai in
-the wrong keyboard layout and fix it with a single hotkey. All local, all under your control.
-
----
-
-## Project overview
-
-SmartTyping Desktop helps bilingual (Thai/English) users type faster and correct
-common mistakes without leaving their current application:
-
-- **Snippet expansion** — short triggers expand into longer text, with categories,
-  enable/disable, and usage tracking.
-- **Language converter** — convert text typed in the wrong keyboard layout between
-  Thai Kedmanee and English QWERTY (e.g. `l;ylfu` → `สวัสดี`).
-- **Template variables** — insert dynamic values such as `{date}`, `{time}`, and
-  `{clipboard}` inside snippets.
-
-The app is designed to be **safe and explicit**: in the MVP nothing is replaced
-automatically as you type. Correction and expansion happen on an explicit hotkey or
-button press.
+พิมพ์คำสั่งสั้นๆ เช่น `/phone` แล้วมันขยายเป็นข้อความที่ตั้งไว้ · พิมพ์ไทยผิดเลย์เอาต์
+(ได้อักษรอังกฤษมั่วๆ) แก้ได้ด้วยคีย์ลัดปุ่มเดียว — **ทำงานในเครื่องทั้งหมด ข้อมูลเป็นส่วนตัว**
 
 ---
 
-## MVP scope
+## ภาพรวม
 
-**In scope (v0.1):**
+SmartTyping ช่วยให้ผู้ใช้สองภาษา (ไทย/อังกฤษ) พิมพ์เร็วขึ้นและแก้ข้อผิดพลาดที่เจอบ่อย
+โดยไม่ต้องออกจากแอปที่ใช้อยู่:
 
-1. **Snippet expansion** — `/trigger` → text, stored in SQLite, category support,
-   enable/disable, usage count.
-2. **Language converter** — Thai Kedmanee ↔ English QWERTY mapping; convert selected
-   text or the last typed word via hotkey (`Ctrl + Shift + L`).
-3. **Template variables** — `{date}`, `{time}`, `{clipboard}` (user-input placeholders planned, not required).
-4. **Settings** — toggle language correction and snippet expansion (startup-with-Windows and hotkey config planned).
+- **ขยาย snippet** — คำสั่งสั้นขยายเป็นข้อความยาว มีหมวดหมู่ เปิด/ปิดได้ นับจำนวนการใช้
+- **แปลงภาษา** — แปลงข้อความที่พิมพ์ผิดเลย์เอาต์ ไทย Kedmanee ↔ อังกฤษ QWERTY
+  (เช่น `l;ylfu` → `สวัสดี`)
+- **ตัวแปรเทมเพลต** — แทรกค่าอัตโนมัติ เช่น `{date}`, `{time}`, `{clipboard}`, `{cursor}`,
+  และ `{input:ป้าย}` (ถามค่าตอนขยาย)
 
-**Intentionally NOT in scope (yet):**
+ออกแบบให้ **ปลอดภัยและชัดเจน**: ไม่มีการแทนที่ข้อความอัตโนมัติขณะพิมพ์ —
+การแก้ภาษาและขยาย snippet เกิดจากการกดคีย์ลัด/ปุ่มเท่านั้น
 
-- Automatic / as-you-type correction (hotkey/manual only for now).
-- AI-assisted correction or suggestions.
-- Cloud sync.
-- Plugin system.
-- Global destructive replacement without a user action.
+---
 
-See [`docs/09_Roadmap.md`](docs/09_Roadmap.md) for what comes after the MVP.
+## ฟีเจอร์
+
+**การพิมพ์ (คีย์ลัด — ทุกอย่างเป็นการกดเอง ไม่มีอัตโนมัติ)**
+- แปลงภาษา — แปลงข้อความที่เลือก หรือ **คำล่าสุด** ถ้าไม่ได้เลือก
+- ขยาย snippet ที่คำสั่งที่เลือก
+- **Quick-picker** — ค้นหา snippet แบบ **fuzzy** แล้วแทรกที่เคอร์เซอร์
+- เพิ่ม snippet จากข้อความที่เลือก
+
+**Snippet & เทมเพลต**
+- CRUD, หมวดหมู่, เปิด/ปิด, นับการใช้, ปุ่มทดลองขยาย (Preview)
+- ตัวแปร: `{date}` / `{date:yyyy-MM-dd}` / `{date+7}` / `{time}` / `{clipboard}` / `{cursor}` / `{input:ป้าย}`
+- **นำเข้า/ส่งออก** เป็นไฟล์ JSON (backup / แชร์)
+
+**ผู้ใช้ & ระบบ**
+- **ตั้งคีย์ลัดเองได้ทั้ง 4 ตัว**, จัดการหมวดหมู่, หน้าสถิติการใช้งาน
+- **Dark mode** (ตามระบบ/สว่าง/มืด), **UI ไทย/อังกฤษ** (default ไทย)
+- เปิดพร้อม Windows, เปิดตอนแรกมี onboarding, system tray
+- อัปเดต: **ตรวจหาอัปเดตได้** (opt-in, ปิดเป็น default — เป็น network feature เดียวของแอป)
+
+**ความปลอดภัย**
+- ข้ามช่องรหัสผ่านที่ตรวจพบ, รักษา clipboard เดิม (รวมรูป/ไฟล์), กันเปิดซ้ำ (single instance),
+  ดักข้อผิดพลาดไม่ให้แอปแครช
+
+> สิ่งที่ **ยังไม่ทำ**: แก้อัตโนมัติขณะพิมพ์, AI, cloud sync + login (ต้องมี backend), ระบบ plugin
+> ดู [`docs/09_Roadmap.md`](docs/09_Roadmap.md)
 
 ---
 
 ## Tech stack
 
-| Concern            | Choice                          |
-|--------------------|---------------------------------|
-| Runtime            | .NET 9                          |
-| Language           | C# (nullable enabled)          |
-| UI                 | WPF + MVVM                      |
-| Persistence        | SQLite                         |
-| Data access        | Dapper                         |
-| Logging            | Serilog                        |
-| Testing            | xUnit                          |
-| Architecture       | Clean Architecture             |
+| ด้าน | เลือกใช้ |
+|------|----------|
+| Runtime | .NET 9 |
+| ภาษา | C# (เปิด nullable) |
+| UI | WPF + MVVM |
+| ฐานข้อมูล | SQLite |
+| Data access | Dapper |
+| Logging | Serilog |
+| Testing | xUnit |
+| สถาปัตยกรรม | Clean Architecture |
 
 ---
 
-## Repository structure
+## โครงสร้างโปรเจกต์
 
 ```
 smarttyping/
 ├── README.md
 ├── CHANGELOG.md
-├── Directory.Build.props        # shared MSBuild settings (nullable, langversion, versioning)
+├── Directory.Build.props        # ตั้งค่า MSBuild ร่วม (nullable, langversion, version)
 ├── SmartTyping.sln
 ├── docs/                        # charter, PRD, SRS, architecture, DB, UI/UX, test plan, ADRs
 ├── src/
-│   ├── SmartTyping.Domain/          # entities, value objects, enums — no dependencies
-│   ├── SmartTyping.Application/     # use cases, interfaces (ports), DTOs, app services
-│   ├── SmartTyping.Infrastructure/  # SQLite + Dapper, Windows hooks, clipboard, injection, logging
+│   ├── SmartTyping.Domain/          # entity, value object, enum — ไม่พึ่งใคร
+│   ├── SmartTyping.Application/      # use case, interface (port), DTO, service
+│   ├── SmartTyping.Infrastructure/  # SQLite+Dapper, Windows hook, clipboard, injection, logging
 │   ├── SmartTyping.UI/              # WPF, MVVM, views, viewmodels, tray, DI composition root
-│   └── SmartTyping.Shared/          # cross-cutting primitives (Result, guards) — no external deps
-├── tests/
-│   └── SmartTyping.Tests/           # unit tests for core logic
-├── assets/                      # icons, images
+│   └── SmartTyping.Shared/          # ของใช้ร่วม (Result, guards) — ไม่พึ่ง external
+├── tests/                       # unit + integration tests
+├── packaging/                   # winget manifests, Inno Setup installer
+├── assets/                      # ไอคอน/รูป
 └── scripts/                     # build / packaging helpers
 ```
 
-Dependency direction (Clean Architecture):
+ทิศทาง dependency (Clean Architecture):
 
 ```
 UI ──► Application ──► Domain
 Infrastructure ──► Application ──► Domain
-Shared ◄── (all layers may reference Shared)
+Shared ◄── (ทุกชั้นอ้าง Shared ได้)
 ```
 
-Domain depends on nothing. Application depends only on Domain (+ Shared). Infrastructure
-and UI depend inward; nothing depends outward on Infrastructure or UI.
+Domain ไม่พึ่งใคร · Application พึ่งแค่ Domain (+ Shared) · Infrastructure และ UI พึ่งเข้าด้านใน
+ไม่มีใครพึ่ง Infrastructure หรือ UI ออกด้านนอก
 
 ---
 
-## Prerequisites
+## สิ่งที่ต้องมี
 
 - Windows 10/11
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 
-Verify the SDK is available:
+ตรวจว่ามี SDK:
 
 ```powershell
-dotnet --version   # expect 9.x
+dotnet --version   # ควรได้ 9.x
 ```
 
 ---
 
-## How to build
+## วิธี build
 
-From the repository root:
+จาก root ของ repo:
 
 ```powershell
 dotnet restore
 dotnet build -c Debug
 ```
 
-Release build:
+Build แบบ Release:
 
 ```powershell
 dotnet build -c Release
 ```
 
-## How to run
+## วิธีรัน
 
 ```powershell
 dotnet run --project src/SmartTyping.UI
 ```
 
-The app launches a main window (snippet manager) and a system tray icon. On first run the
-SQLite database is created automatically under
-`%LOCALAPPDATA%\SmartTyping\smarttyping.db` and seeded with default settings and a few
-sample snippets.
+แอปจะเปิดหน้าต่างหลัก (ตัวจัดการ snippet) + ไอคอนใน system tray · ตอนรันครั้งแรก
+ฐานข้อมูล SQLite จะถูกสร้างที่ `%LOCALAPPDATA%\SmartTyping\smarttyping.db`
+พร้อมค่าเริ่มต้นและ snippet ตัวอย่าง
 
-**Global hotkeys** (explicit action — nothing happens automatically):
+**คีย์ลัด (default — ปรับได้ในหน้า Settings):**
 
-- **Ctrl + Shift + L** — convert text between Thai Kedmanee and English QWERTY. With a selection it converts that; with no selection it converts the **last typed word**.
-- **Ctrl + Shift + E** — expand the selected trigger (e.g. select `/phone`, press the hotkey).
-- **Ctrl + Shift + Space** — open the **quick-picker**: search your snippets and insert one at the caret.
-- **Ctrl + Shift + N** — **add a snippet from the current selection** (opens the Add dialog pre-filled).
+- **Ctrl + Shift + L** — แปลงภาษา ไทย ↔ อังกฤษ (ข้อความที่เลือก หรือ **คำล่าสุด** ถ้าไม่ได้เลือก)
+- **Ctrl + Shift + E** — ขยาย snippet ที่คำสั่งที่เลือก (เช่น เลือก `/phone` แล้วกด)
+- **Ctrl + Shift + Space** — เปิด **quick-picker** ค้นหา snippet แล้วแทรกที่เคอร์เซอร์
+- **Ctrl + Shift + N** — **เพิ่ม snippet จากข้อความที่เลือก**
 
-All four hotkeys are **rebindable** in Settings. The quick-picker uses **fuzzy** (subsequence) search.
-
-The UI is **Thai by default** (switch to English in Settings) and follows the system **light/dark** theme (overridable in Settings).
-
-## How to publish (self-contained single file)
+## วิธี publish (ไฟล์เดียว self-contained)
 
 ```powershell
 dotnet publish src/SmartTyping.UI -c Release /p:PublishProfile=win-x64
 # → src/SmartTyping.UI/bin/Release/net9.0-windows/win-x64/publish/SmartTyping.exe
 ```
 
-## How to test
+## วิธีสร้าง installer (Inno Setup)
+
+```powershell
+pwsh scripts/build-installer.ps1 -Version 0.1.0
+# ต้องมี Inno Setup 6 (winget install JRSoftware.InnoSetup)
+# → dist/SmartTyping-Setup-0.1.0.exe
+```
+
+## วิธีทดสอบ
 
 ```powershell
 dotnet test
@@ -163,21 +169,21 @@ dotnet test
 
 ---
 
-## Development rules
+## กฎการพัฒนา
 
-- **Nullable reference types are on** everywhere. Do not disable them.
-- **Async where appropriate** — I/O (DB, clipboard) is async; pure CPU mapping is sync.
-- **Dependency injection** — no `new`-ing infrastructure inside application/UI code. Register in the UI composition root.
-- **No static business logic** except pure utility/mapping constants (e.g. the keyboard layout tables).
-- **Interfaces for infrastructure concerns** — every I/O boundary is a port defined in Application, implemented in Infrastructure.
-- **Windows API stays in Infrastructure** — no `user32.dll` P/Invoke in Domain, Application, or UI code-behind logic.
-- **Meaningful names**; XML comments only where behavior is non-obvious.
-- **Tests for core logic** — converters, snippet matching, template replacement must be covered.
-- **Conventional Commits** — `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
-- **Do not commit user data** — `*.db`, `logs/`, and `bin/obj` are git-ignored.
+- **เปิด nullable reference types** ทุกที่ อย่าปิด
+- **ใช้ async ตามความเหมาะสม** — I/O (DB, clipboard) เป็น async · การแมปที่เป็น CPU ล้วนเป็น sync
+- **Dependency injection** — ห้าม `new` infrastructure ในชั้น application/UI · ลงทะเบียนที่ composition root (UI)
+- **ไม่มี business logic แบบ static** ยกเว้นค่าคงที่/ตารางแมปที่ pure (เช่นตารางเลย์เอาต์คีย์บอร์ด)
+- **ใช้ interface สำหรับงาน infrastructure** — ทุกขอบเขต I/O เป็น port ประกาศใน Application ทำจริงใน Infrastructure
+- **Windows API อยู่ใน Infrastructure เท่านั้น** — ไม่มี P/Invoke `user32.dll` ใน Domain/Application/UI
+- **ชื่อสื่อความหมาย** · ใส่ XML comment เฉพาะที่พฤติกรรมไม่ชัด
+- **เขียนเทสต์ให้ logic หลัก** — converter, snippet matching, template ต้องมีเทสต์
+- **Conventional Commits** — `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
+- **อย่า commit ข้อมูลผู้ใช้** — `*.db`, `logs/`, `bin/obj` ถูก git-ignore ไว้แล้ว
 
 ---
 
 ## License
 
-[MIT](LICENSE) — a permissive default chosen for the MVP. Change it if your project needs different terms.
+[MIT](LICENSE) — เลือกเป็น default แบบอนุญาตกว้าง เปลี่ยนได้ถ้าโปรเจกต์ต้องการเงื่อนไขอื่น
