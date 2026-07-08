@@ -99,6 +99,7 @@ public partial class App : System.Windows.Application
             var hook = _services.GetRequiredService<IKeyboardHook>();
             hook.UpdateBindings(settings.GetHotkeysAsync().GetAwaiter().GetResult());
             hook.SuggestionsEnabled = settings.IsAutoCorrectSuggestEnabledAsync().GetAwaiter().GetResult();
+            hook.AutoApplySuggestions = settings.IsAutoCorrectAutoApplyEnabledAsync().GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -144,8 +145,10 @@ public partial class App : System.Windows.Application
                 Localization.LocalizationManager.Instance["Tray_AiNotConfigured"]));
         _aiImprove.Start();
 
-        // Non-destructive as-you-type layout hint (only fires when the user enabled it).
-        _services.GetRequiredService<IKeyboardHook>().LayoutSuggestionRaised += OnLayoutSuggestionRaised;
+        // As-you-type layout: a non-destructive hint, or (opt-in) an automatic in-place fix.
+        var keyboardHook = _services.GetRequiredService<IKeyboardHook>();
+        keyboardHook.LayoutSuggestionRaised += OnLayoutSuggestionRaised;
+        keyboardHook.LayoutAutoCorrectRequested += OnLayoutAutoCorrectRequested;
 
         // Surface the window when a second launch signals us.
         _singleInstance.StartListening(() => Dispatcher.Invoke(ShowMainWindow));
@@ -270,6 +273,26 @@ public partial class App : System.Windows.Application
         var loc = Localization.LocalizationManager.Instance;
         Dispatcher.Invoke(() => _tray?.ShowBalloon(loc["Tray_Suggestion"],
             loc.Format("Tray_SuggestionBody", suggestion.Original, suggestion.Suggestion)));
+    }
+
+    private async void OnLayoutAutoCorrectRequested(object? sender, Application.Language.LayoutSuggestion suggestion)
+    {
+        try
+        {
+            // Delete the wrong-layout word plus the space that closed it, and type the fix + a space.
+            var corrector = _services!.GetRequiredService<ILayoutAutoCorrector>();
+            var ok = await corrector.ReplaceLastWordAsync(suggestion.Original.Length + 1, suggestion.Suggestion + " ");
+            if (ok)
+            {
+                var loc = Localization.LocalizationManager.Instance;
+                Dispatcher.Invoke(() => _tray?.ShowBalloon(loc["Tray_AutoFixed"],
+                    loc.Format("Tray_AutoFixedBody", suggestion.Original, suggestion.Suggestion)));
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Automatic layout correction failed.");
+        }
     }
 
     private static string Preview(string text)

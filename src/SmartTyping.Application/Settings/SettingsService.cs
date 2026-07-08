@@ -52,6 +52,13 @@ public sealed class SettingsService
     public Task SetAutoCorrectSuggestEnabledAsync(bool enabled) =>
         SetBoolAsync(SettingKeys.AutoCorrectSuggest, enabled);
 
+    /// <summary>When as-you-type is on, correct automatically (true) vs only suggest (false, default).</summary>
+    public Task<bool> IsAutoCorrectAutoApplyEnabledAsync() =>
+        GetBoolAsync(SettingKeys.AutoCorrectAuto, defaultValue: false);
+
+    public Task SetAutoCorrectAutoApplyEnabledAsync(bool enabled) =>
+        SetBoolAsync(SettingKeys.AutoCorrectAuto, enabled);
+
     /// <summary>The AI provider id (e.g. "gemini"). Defaults to Gemini.</summary>
     public async Task<string> GetAiProviderAsync()
     {

@@ -25,4 +25,14 @@ public sealed class WrongLayoutDetectorTests
         Assert.False(WrongLayoutDetector.LooksLikeWrongLayoutThai("abcd"));  // letters only
         Assert.True(WrongLayoutDetector.LooksLikeWrongLayoutThai("ab;cd"));  // both
     }
+
+    [Theory]
+    [InlineData("don't", false)]   // apostrophe-only: NOT auto-corrected (English contraction)
+    [InlineData("it's", false)]
+    [InlineData("l;ylfu", true)]   // ';' still triggers strict mode
+    [InlineData("[b'k", true)]     // has '[' so still flagged even though it also has '
+    public void StrictModeIgnoresApostrophe(string word, bool expected)
+    {
+        Assert.Equal(expected, WrongLayoutDetector.LooksLikeWrongLayoutThai(word, strict: true));
+    }
 }

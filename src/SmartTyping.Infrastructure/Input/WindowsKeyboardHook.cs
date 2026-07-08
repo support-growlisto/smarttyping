@@ -53,7 +53,11 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
     public event EventHandler<LayoutSuggestion>? LayoutSuggestionRaised;
 
+    public event EventHandler<LayoutSuggestion>? LayoutAutoCorrectRequested;
+
     public bool SuggestionsEnabled { get; set; }
+
+    public bool AutoApplySuggestions { get; set; }
 
     public void UpdateBindings(IReadOnlyDictionary<HotkeyAction, Hotkey> bindings) => _bindings = bindings;
 
@@ -137,7 +141,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             case NativeMethods.VK_SPACE:
             case NativeMethods.VK_RETURN:
             case NativeMethods.VK_TAB:
-                EvaluateWord();
+                EvaluateWord(atSpace: vk == NativeMethods.VK_SPACE);
                 _wordBuffer.Clear();
                 return;
             case NativeMethods.VK_BACK:
@@ -159,7 +163,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
     }
 
-    private void EvaluateWord()
+    private void EvaluateWord(bool atSpace)
     {
         var word = _wordBuffer.ToString();
         if (word.Length < 2 || word == _lastSuggestedWord)
@@ -167,8 +171,13 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             return;
         }
 
-        // If the active layout is already Thai, what's on screen is Thai — nothing to suggest.
-        if (NativeMethods.ForegroundLayoutIsThai() || !WrongLayoutDetector.LooksLikeWrongLayoutThai(word))
+        // Automatic replacement runs only on a space boundary (so we never disturb a line break) and
+        // uses the stricter heuristic that ignores apostrophes (leaves English contractions alone).
+        var autoApply = AutoApplySuggestions && atSpace;
+
+        // If the active layout is already Thai, what's on screen is Thai — nothing to do.
+        if (NativeMethods.ForegroundLayoutIsThai() ||
+            !WrongLayoutDetector.LooksLikeWrongLayoutThai(word, strict: autoApply))
         {
             return;
         }
@@ -180,7 +189,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
 
         _lastSuggestedWord = word;
-        var handler = LayoutSuggestionRaised;
+        var handler = autoApply ? LayoutAutoCorrectRequested : LayoutSuggestionRaised;
         if (handler is not null)
         {
             var payload = new LayoutSuggestion(word, suggestion);

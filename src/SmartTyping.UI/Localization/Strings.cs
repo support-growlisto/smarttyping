@@ -54,6 +54,10 @@ internal static class Strings
             ["Settings_AutoCorrectSuggestHint"] = (
                 "Shows a tray hint when a word looks like wrong-layout text. Never replaces anything — press the convert hotkey to apply.",
                 "แสดงคำแนะนำใน tray เมื่อคำที่พิมพ์ดูเหมือนพิมพ์ผิดเลย์เอาต์ ไม่แทนที่ให้เอง— กดคีย์ลัดแปลงภาษาเพื่อแก้"),
+            ["Settings_AutoCorrectAuto"] = ("Fix automatically (replace as I type)", "แก้ให้อัตโนมัติ (แทนที่ขณะพิมพ์)"),
+            ["Settings_AutoCorrectAutoHint"] = (
+                "When a wrong-layout word is finished with a space, replace it in place instead of only hinting. Uses a stricter rule so English words like don't / it's are left alone.",
+                "เมื่อพิมพ์คำผิดเลย์เอาต์แล้วเคาะ space จะแทนที่ให้ทันทีแทนการแค่แจ้งเตือน ใช้เกณฑ์เข้มขึ้นเพื่อไม่แตะคำอังกฤษอย่าง don't / it's"),
             ["Settings_Hotkeys"] = ("Hotkeys", "คีย์ลัด"),
             ["Settings_ConvertLayout"] = ("Convert layout", "แปลงภาษา"),
             ["Settings_ExpandSnippet"] = ("Expand snippet", "ขยาย snippet"),
@@ -146,6 +150,8 @@ internal static class Strings
             ["Tray_Expanded"] = ("Expanded", "ขยายแล้ว"),
             ["Tray_Suggestion"] = ("Wrong layout?", "พิมพ์ผิดเลย์เอาต์?"),
             ["Tray_SuggestionBody"] = ("‘{0}’ → ‘{1}’ · press the convert hotkey", "‘{0}’ → ‘{1}’ · กดคีย์ลัดแปลงภาษา"),
+            ["Tray_AutoFixed"] = ("Fixed layout", "แก้เลย์เอาต์แล้ว"),
+            ["Tray_AutoFixedBody"] = ("‘{0}’ → ‘{1}’", "‘{0}’ → ‘{1}’"),
             ["Tray_AiImproved"] = ("AI improved", "AI ปรับข้อความแล้ว"),
             ["Tray_AiWorking_Title"] = ("AI", "AI"),
             ["Tray_AiWorking"] = ("Improving…", "กำลังปรับข้อความ…"),

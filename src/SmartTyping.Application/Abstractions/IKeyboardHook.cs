@@ -28,8 +28,20 @@ public interface IKeyboardHook : IDisposable
     /// </summary>
     event EventHandler<Language.LayoutSuggestion>? LayoutSuggestionRaised;
 
+    /// <summary>
+    /// Raised (instead of <see cref="LayoutSuggestionRaised"/>) when automatic correction is enabled
+    /// and a wrong-layout word is finished with a space. The handler replaces it in place.
+    /// </summary>
+    event EventHandler<Language.LayoutSuggestion>? LayoutAutoCorrectRequested;
+
     /// <summary>Enables/disables the non-destructive as-you-type layout suggestions.</summary>
     bool SuggestionsEnabled { get; set; }
+
+    /// <summary>
+    /// When true (and <see cref="SuggestionsEnabled"/> is on), a detected wrong-layout word is
+    /// corrected automatically on the next space instead of only being suggested.
+    /// </summary>
+    bool AutoApplySuggestions { get; set; }
 
     /// <summary>Replaces the hotkey bindings the hook matches against (applied live).</summary>
     void UpdateBindings(IReadOnlyDictionary<Domain.Enums.HotkeyAction, Domain.ValueObjects.Hotkey> bindings);

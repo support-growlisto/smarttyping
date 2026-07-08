@@ -18,6 +18,12 @@
         <TextBlock Text="{Binding [Settings_AutoCorrectSuggestHint], Source={x:Static loc:LocalizationManager.Instance}}"
                    TextWrapping="Wrap" FontSize="11" Margin="24,0,0,0"
                    Foreground="{DynamicResource Brush.SubtleForeground}" />
+        <CheckBox Content="{Binding [Settings_AutoCorrectAuto], Source={x:Static loc:LocalizationManager.Instance}}"
+                  IsChecked="{Binding AutoCorrectAutoApply, Mode=TwoWay}" IsEnabled="{Binding CanAutoApply}"
+                  Margin="24,6,0,0" />
+        <TextBlock Text="{Binding [Settings_AutoCorrectAutoHint], Source={x:Static loc:LocalizationManager.Instance}}"
+                   TextWrapping="Wrap" FontSize="11" Margin="48,0,0,0"
+                   Foreground="{DynamicResource Brush.SubtleForeground}" />
 
         <TextBlock Text="{Binding [Settings_Hotkeys], Source={x:Static loc:LocalizationManager.Instance}}"
                    FontWeight="SemiBold" Margin="0,16,0,4" />

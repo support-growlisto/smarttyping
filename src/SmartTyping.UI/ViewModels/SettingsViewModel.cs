@@ -54,6 +54,7 @@ public sealed class SettingsViewModel : ObservableObject
     private bool _snippetExpansionEnabled = true;
     private bool _languageCorrectionEnabled = true;
     private bool _autoCorrectSuggestEnabled;
+    private bool _autoCorrectAutoApply;
     private string _aiApiKey = string.Empty;
     private bool _startWithWindows;
     private bool _checkForUpdates;
@@ -207,6 +208,26 @@ public sealed class SettingsViewModel : ObservableObject
                 {
                     _ = _settings.SetAutoCorrectSuggestEnabledAsync(value);
                 }
+                OnPropertyChanged(nameof(CanAutoApply));
+            }
+        }
+    }
+
+    /// <summary>The automatic-fix sub-option only makes sense while suggestions are enabled.</summary>
+    public bool CanAutoApply => _autoCorrectSuggestEnabled;
+
+    public bool AutoCorrectAutoApply
+    {
+        get => _autoCorrectAutoApply;
+        set
+        {
+            if (SetProperty(ref _autoCorrectAutoApply, value))
+            {
+                _hook.AutoApplySuggestions = value;
+                if (!_loading)
+                {
+                    _ = _settings.SetAutoCorrectAutoApplyEnabledAsync(value);
+                }
             }
         }
     }
@@ -290,6 +311,7 @@ public sealed class SettingsViewModel : ObservableObject
             SnippetExpansionEnabled = await _settings.IsSnippetExpansionEnabledAsync();
             LanguageCorrectionEnabled = await _settings.IsLanguageCorrectionEnabledAsync();
             AutoCorrectSuggestEnabled = await _settings.IsAutoCorrectSuggestEnabledAsync();
+            AutoCorrectAutoApply = await _settings.IsAutoCorrectAutoApplyEnabledAsync();
             AiApiKey = await _settings.GetAiApiKeyAsync();
             // The registry is the source of truth for auto-start.
             StartWithWindows = _startup.IsEnabled();
