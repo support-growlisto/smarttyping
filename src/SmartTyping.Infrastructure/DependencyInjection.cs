@@ -1,7 +1,9 @@
+using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SmartTyping.Application.Abstractions;
 using SmartTyping.Infrastructure.Input;
+using SmartTyping.Infrastructure.Update;
 using SmartTyping.Infrastructure.Logging;
 using SmartTyping.Infrastructure.Persistence;
 using SmartTyping.Infrastructure.Persistence.Repositories;
@@ -48,6 +50,16 @@ public static class DependencyInjection
 
         // OS integration.
         services.AddSingleton<IStartupService, WindowsStartupService>();
+
+        // Update check (the only network feature; opt-in at the UI layer).
+        services.AddSingleton(_ =>
+        {
+            var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("SmartTyping-UpdateCheck");
+            http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+            return http;
+        });
+        services.AddSingleton<IUpdateService, WindowsUpdateChecker>();
 
         return services;
     }

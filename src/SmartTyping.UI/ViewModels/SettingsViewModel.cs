@@ -46,6 +46,7 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly SettingsService _settings;
     private readonly IStartupService _startup;
     private readonly IKeyboardHook _hook;
+    private readonly IUpdateService _updates;
     private readonly IDialogService _dialogs;
     private readonly Dictionary<HotkeyAction, Hotkey> _hotkeys = new(SettingsService.DefaultHotkeys);
     private bool _loading;
@@ -53,16 +54,20 @@ public sealed class SettingsViewModel : ObservableObject
     private bool _snippetExpansionEnabled = true;
     private bool _languageCorrectionEnabled = true;
     private bool _startWithWindows;
+    private bool _checkForUpdates;
+    private string _updateStatus = string.Empty;
     private LanguageOption _selectedLanguage;
     private ThemeOption _selectedTheme;
 
-    public SettingsViewModel(SettingsService settings, IStartupService startup, IKeyboardHook hook, IDialogService dialogs)
+    public SettingsViewModel(SettingsService settings, IStartupService startup, IKeyboardHook hook, IUpdateService updates, IDialogService dialogs)
     {
         _settings = settings;
         _startup = startup;
         _hook = hook;
+        _updates = updates;
         _dialogs = dialogs;
         _selectedLanguage = Languages[0];
+        CheckForUpdatesCommand = new AsyncRelayCommand(CheckForUpdatesNowAsync);
 
         var loc = LocalizationManager.Instance;
         Themes = new[]
@@ -207,6 +212,44 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    public bool CheckForUpdates
+    {
+        get => _checkForUpdates;
+        set
+        {
+            if (SetProperty(ref _checkForUpdates, value) && !_loading)
+            {
+                _ = _settings.SetUpdateCheckEnabledAsync(value);
+            }
+        }
+    }
+
+    public string UpdateStatus
+    {
+        get => _updateStatus;
+        private set => SetProperty(ref _updateStatus, value);
+    }
+
+    public ICommand CheckForUpdatesCommand { get; }
+
+    private async Task CheckForUpdatesNowAsync()
+    {
+        var loc = LocalizationManager.Instance;
+        UpdateStatus = loc["Update_Checking"];
+        var info = await _updates.CheckForUpdateAsync();
+        if (info is null)
+        {
+            UpdateStatus = loc["Update_UpToDate"];
+            return;
+        }
+
+        UpdateStatus = loc.Format("Update_Available", info.Version);
+        if (_dialogs.Confirm(loc.Format("Update_AvailablePrompt", info.Version), loc["Update_Title"]))
+        {
+            DiagnosticsLauncher.Open(info.DownloadUrl);
+        }
+    }
+
     public async Task LoadAsync()
     {
         _loading = true;
@@ -216,6 +259,7 @@ public sealed class SettingsViewModel : ObservableObject
             LanguageCorrectionEnabled = await _settings.IsLanguageCorrectionEnabledAsync();
             // The registry is the source of truth for auto-start.
             StartWithWindows = _startup.IsEnabled();
+            CheckForUpdates = await _settings.IsUpdateCheckEnabledAsync();
 
             var languageCode = await _settings.GetLanguageAsync();
             SelectedLanguage = Languages.FirstOrDefault(l => l.Code == languageCode) ?? Languages[0];

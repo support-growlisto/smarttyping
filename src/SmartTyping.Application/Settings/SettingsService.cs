@@ -38,6 +38,13 @@ public sealed class SettingsService
     public Task SetStartWithWindowsAsync(bool enabled) =>
         SetBoolAsync(SettingKeys.StartWithWindows, enabled);
 
+    /// <summary>Whether to check for updates (the app's only network feature). Off by default.</summary>
+    public Task<bool> IsUpdateCheckEnabledAsync() =>
+        GetBoolAsync(SettingKeys.CheckForUpdates, defaultValue: false);
+
+    public Task SetUpdateCheckEnabledAsync(bool enabled) =>
+        SetBoolAsync(SettingKeys.CheckForUpdates, enabled);
+
     /// <summary>The UI language code (e.g. "th", "en"). Defaults to Thai.</summary>
     public async Task<string> GetLanguageAsync()
     {

@@ -132,6 +132,30 @@ public partial class App : System.Windows.Application
         mainWindow.Show();
 
         _ = ShowOnboardingIfFirstRunAsync();
+        _ = CheckForUpdatesOnStartupAsync();
+    }
+
+    private async Task CheckForUpdatesOnStartupAsync()
+    {
+        try
+        {
+            var settings = _services!.GetRequiredService<SettingsService>();
+            if (!await settings.IsUpdateCheckEnabledAsync())
+            {
+                return;
+            }
+
+            var info = await _services.GetRequiredService<IUpdateService>().CheckForUpdateAsync();
+            if (info is not null)
+            {
+                var loc = Localization.LocalizationManager.Instance;
+                Dispatcher.Invoke(() => _tray?.ShowBalloon(loc["Update_Title"], loc.Format("Update_Available", info.Version)));
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug(ex, "Startup update check failed.");
+        }
     }
 
     private async Task ShowOnboardingIfFirstRunAsync()

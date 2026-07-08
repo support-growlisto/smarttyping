@@ -65,6 +65,14 @@ internal static class Strings
             ["Theme_Dark"] = ("Dark", "มืด"),
             ["Settings_OpenLogs"] = ("Open logs", "เปิด log"),
             ["Settings_Close"] = ("Close", "ปิด"),
+            ["Settings_Updates"] = ("Updates", "อัปเดต"),
+            ["Settings_CheckForUpdates"] = ("Check for updates", "ตรวจหาอัปเดต"),
+            ["Settings_CheckNow"] = ("Check now", "ตรวจเดี๋ยวนี้"),
+            ["Update_Title"] = ("Update", "อัปเดต"),
+            ["Update_Checking"] = ("Checking…", "กำลังตรวจสอบ…"),
+            ["Update_UpToDate"] = ("You're up to date.", "เป็นเวอร์ชันล่าสุดแล้ว"),
+            ["Update_Available"] = ("Update available: v{0}", "มีอัปเดต: v{0}"),
+            ["Update_AvailablePrompt"] = ("Version {0} is available. Open the download page?", "มีเวอร์ชัน {0} แล้ว เปิดหน้าดาวน์โหลดไหม?"),
 
             // Onboarding
             ["Onb_Title"] = ("Welcome to SmartTyping", "ยินดีต้อนรับสู่ SmartTyping"),

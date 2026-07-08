@@ -51,6 +51,17 @@
         <CheckBox Content="{Binding [Settings_StartWithWindows], Source={x:Static loc:LocalizationManager.Instance}}"
                   IsChecked="{Binding StartWithWindows, Mode=TwoWay}" Margin="0,14,0,0" />
 
+        <TextBlock Text="{Binding [Settings_Updates], Source={x:Static loc:LocalizationManager.Instance}}"
+                   FontWeight="SemiBold" Margin="0,16,0,4" />
+        <CheckBox Content="{Binding [Settings_CheckForUpdates], Source={x:Static loc:LocalizationManager.Instance}}"
+                  IsChecked="{Binding CheckForUpdates, Mode=TwoWay}" Margin="0,0,0,6" />
+        <StackPanel Orientation="Horizontal">
+            <Button Command="{Binding CheckForUpdatesCommand}" Padding="12,4"
+                    Content="{Binding [Settings_CheckNow], Source={x:Static loc:LocalizationManager.Instance}}" />
+            <TextBlock Text="{Binding UpdateStatus}" VerticalAlignment="Center" Margin="10,0,0,0"
+                       Foreground="{DynamicResource Brush.SubtleForeground}" />
+        </StackPanel>
+
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
             <Button Content="{Binding [Settings_OpenLogs], Source={x:Static loc:LocalizationManager.Instance}}"
                     Padding="12,4" Margin="0,0,8,0" Click="OnOpenLogsClick" />

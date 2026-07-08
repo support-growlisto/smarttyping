@@ -16,5 +16,6 @@ public static class SettingKeys
     public const string HotkeyExpand = "HotkeyExpand";
     public const string HotkeyPicker = "HotkeyPicker";
     public const string HotkeyCapture = "HotkeyCapture";
+    public const string CheckForUpdates = "CheckForUpdates";
     public const string SchemaVersion = "SchemaVersion";
 }

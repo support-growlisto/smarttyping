@@ -38,7 +38,8 @@ A living view of where SmartTyping Desktop is headed. Order is by priority, not 
   password boxes (already skipped) to browsers/Electron/UWP via UI Automation `IsPassword`.
 - Snippet search improvements (fuzzy, recent, favorites).
 - Optional **opt-in** auto-expand as you type (still never destructive without inline confirmation).
-- Installer (MSIX / Inno Setup), auto-update.
+- ~~Installer (Inno Setup), auto-update~~ — **done** (v0.1): per-user installer + opt-in update check. MSIX/Store still later.
+- Cloud sync + accounts — deferred (needs a hosted backend + OAuth); see the charter's non-goals.
 
 ## Deferred — explicitly out of scope until later
 

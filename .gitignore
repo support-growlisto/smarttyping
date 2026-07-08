@@ -51,8 +51,9 @@ coverage/
 logs/
 *.log
 
-# Publish output
+# Publish / installer output
 publish/
+dist/
 *.pubxml.user
 
 # OS files

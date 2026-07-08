@@ -57,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Convert the last typed word without selecting** (PRD FR-7): if you press Ctrl+Shift+L with no selection, SmartTyping auto-selects the previous word (Ctrl+Shift+Left) and converts it in place.
 - **Quick-picker** (Ctrl+Shift+Space): a floating, searchable list of your snippets. Type to fuzzy-filter (trigger-prefix ranks first, then trigger-, then content-matches; ties break by usage), ↑↓ to navigate, Enter to insert at the caret, Esc to dismiss. Focus returns to the app you were typing in, and it won't insert into a detected password field. Ranking lives in `SnippetSearch` (Application) and is unit-tested.
 
+### Distribution & updates
+- **Windows installer (Inno Setup)** — `packaging/installer/SmartTyping.iss` + `scripts/build-installer.ps1` build a per-user `SmartTyping-Setup-<version>.exe` with Start Menu / optional Desktop shortcuts and an uninstaller (no admin, no signing cert needed).
+- **In-app update check** — opt-in (off by default; the app's only network feature). Checks the GitHub "latest release" endpoint on startup and via Settings → "Check now"; if a newer version exists it offers to open the download page. Version comparison is a pure, unit-tested `UpdateComparer`.
+
 ### UI polish
 - A refreshed visual design: refined light/dark palettes, an **accent primary button** for the main actions (Add / Save / Insert), rounded text boxes with an accent focus ring, accent-filled check boxes, softer rounded list selection, and a cleaner grid (no gridlines, roomier rows, subtle headers). All themed, so it looks consistent in light and dark.
 

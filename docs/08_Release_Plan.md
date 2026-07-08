@@ -34,7 +34,16 @@ Output: `src/SmartTyping.UI/bin/Release/net9.0-windows/win-x64/publish/`.
 - Ship the single-file `SmartTyping.exe` from the publish profile (zip optional).
 - **winget**: portable manifests live in `packaging/winget/` — fill the release URL + SHA-256, then
   `winget validate` / submit so users can `winget install SmartTyping.SmartTyping`. See that folder's README.
-- Future: MSIX or an Inno Setup installer with uninstall (start-with-Windows is already built in-app).
+- **Installer (Inno Setup)**: `packaging/installer/SmartTyping.iss` + `scripts/build-installer.ps1`
+  produce a per-user `SmartTyping-Setup-<version>.exe` (Start Menu / optional Desktop shortcut,
+  uninstaller). Requires Inno Setup 6 (`iscc`). MSIX/Store is deferred (needs a signing cert).
+
+## 4a. Updates
+
+- **In-app update check** (opt-in, off by default — the app's only network feature). When enabled,
+  it queries the GitHub "latest release" endpoint on startup and via Settings -> "Check now",
+  comparing versions with the pure `UpdateComparer`. If newer, it offers to open the download page.
+- Point `WindowsUpdateChecker.LatestReleaseUrl` at the real repository before release.
 
 ## 5. Pre-release checklist
 
