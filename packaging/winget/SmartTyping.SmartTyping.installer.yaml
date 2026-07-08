@@ -12,6 +12,6 @@ Commands:
 Installers:
   - Architecture: x64
     InstallerUrl: https://github.com/support-growlisto/smarttyping/releases/download/v0.1.0/SmartTyping-0.1.0-win-x64.exe
-    InstallerSha256: 0338EEC85114E6BDC9742D25EC9C21D1716509E8CBBE3566BA008D68482FB1F1
+    InstallerSha256: 1B09DE3D491EC615179559654E1ACFFB6260C2E7C6DB4530DAC5A8D71A23BA96
 ManifestType: installer
 ManifestVersion: 1.6.0
