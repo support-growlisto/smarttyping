@@ -15,6 +15,13 @@ public partial class MainWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
         Icon = AppIcon.TryLoad();
+
+        // Show the running version in the title bar so the build in use is unambiguous.
+        var version = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
+        if (version is not null)
+        {
+            Title = $"SmartTyping {version.Major}.{version.Minor}.{version.Build}";
+        }
         Loaded += async (_, _) => await _viewModel.LoadAsync();
     }
 
