@@ -1,0 +1,64 @@
+<Window x:Class="SmartTyping.UI.Views.SnippetEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SmartTyping.UI.Localization"
+        Title="{Binding Title}" Height="480" Width="480"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
+        MinHeight="420" MinWidth="440"
+        FontFamily="Segoe UI" FontSize="13">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="{Binding [Edit_Trigger], Source={x:Static loc:LocalizationManager.Instance}}" Width="70" VerticalAlignment="Center" />
+            <TextBox Text="{Binding Trigger, UpdateSourceTrigger=PropertyChanged}"
+                     Width="240" Padding="4,3" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="{Binding [Edit_Category], Source={x:Static loc:LocalizationManager.Instance}}" Width="70" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
+                      DisplayMemberPath="Name" Width="240" />
+        </StackPanel>
+
+        <CheckBox Grid.Row="2" Margin="70,0,0,8" IsChecked="{Binding IsEnabled}"
+                  Content="{Binding [Edit_Enabled], Source={x:Static loc:LocalizationManager.Instance}}" />
+
+        <TextBlock Grid.Row="3" Margin="0,0,0,4" VerticalAlignment="Top"
+                   Text="{Binding [Edit_Content], Source={x:Static loc:LocalizationManager.Instance}}" />
+        <TextBox Grid.Row="3" Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}"
+                 Margin="0,20,0,0" AcceptsReturn="True" TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto" Padding="6" />
+
+        <DockPanel Grid.Row="4" Margin="0,8,0,0">
+            <Button DockPanel.Dock="Right" Command="{Binding PreviewCommand}" Padding="10,3"
+                    Content="{Binding [Edit_Preview], Source={x:Static loc:LocalizationManager.Instance}}" />
+            <TextBlock Foreground="Gray" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Text="{Binding [Edit_Variables], Source={x:Static loc:LocalizationManager.Instance}}" />
+        </DockPanel>
+
+        <Border Grid.Row="5" Margin="0,6,0,0" Padding="6" Background="#F4F4F8" BorderBrush="#DDD" BorderThickness="1">
+            <TextBlock Text="{Binding PreviewText}" TextWrapping="Wrap" MinHeight="34"
+                       FontFamily="Consolas, Segoe UI" Foreground="#333" />
+        </Border>
+
+        <TextBlock Grid.Row="6" Margin="0,6,0,0" Foreground="#C0392B"
+                   Text="{Binding Error}" TextWrapping="Wrap" />
+
+        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Width="80" Margin="0,0,8,0" IsCancel="True" Click="OnCancelClick"
+                    Content="{Binding [Edit_Cancel], Source={x:Static loc:LocalizationManager.Instance}}" />
+            <Button Width="80" IsDefault="True" Click="OnSaveClick"
+                    Content="{Binding [Edit_Save], Source={x:Static loc:LocalizationManager.Instance}}" />
+        </StackPanel>
+    </Grid>
+</Window>

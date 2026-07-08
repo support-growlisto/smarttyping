@@ -1,0 +1,96 @@
+<Window x:Class="SmartTyping.UI.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SmartTyping.UI.Localization"
+        Title="SmartTyping" Height="520" Width="820"
+        MinHeight="480" MinWidth="720"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI" FontSize="13">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </Window.Resources>
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Left: categories + settings -->
+        <DockPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,0">
+            <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0,0,0,6"
+                       Text="{Binding [Main_Categories], Source={x:Static loc:LocalizationManager.Instance}}" />
+            <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Command="{Binding ImportCommand}" Padding="8,4" Margin="0,0,2,0"
+                            Content="{Binding [Main_Import], Source={x:Static loc:LocalizationManager.Instance}}" />
+                    <Button Grid.Column="1" Command="{Binding ExportCommand}" Padding="8,4" Margin="2,0,0,0"
+                            Content="{Binding [Main_Export], Source={x:Static loc:LocalizationManager.Instance}}" />
+                </Grid>
+                <Button Margin="0,6,0,0" Padding="8,4" Click="OnSettingsClick"
+                        Content="{Binding [Main_Settings], Source={x:Static loc:LocalizationManager.Instance}}" />
+            </StackPanel>
+            <ListBox ItemsSource="{Binding CategoryFilters}"
+                     SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                     DisplayMemberPath="Name" />
+        </DockPanel>
+
+        <!-- Right: toolbar + grid -->
+        <DockPanel Grid.Row="0" Grid.Column="1">
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                    <Button Command="{Binding AddCommand}" Padding="10,4" Margin="4,0,0,0"
+                            Content="{Binding [Main_Add], Source={x:Static loc:LocalizationManager.Instance}}" />
+                    <Button Command="{Binding EditCommand}" Padding="10,4" Margin="4,0,0,0"
+                            Content="{Binding [Main_Edit], Source={x:Static loc:LocalizationManager.Instance}}" />
+                    <Button Command="{Binding DeleteCommand}" Padding="10,4" Margin="4,0,0,0"
+                            Content="{Binding [Main_Delete], Source={x:Static loc:LocalizationManager.Instance}}" />
+                </StackPanel>
+                <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         VerticalContentAlignment="Center" Padding="6,3"
+                         ToolTip="{Binding [Main_SearchTooltip], Source={x:Static loc:LocalizationManager.Instance}}" />
+            </DockPanel>
+
+            <Grid>
+                <DataGrid ItemsSource="{Binding Snippets}"
+                          SelectedItem="{Binding SelectedSnippet, Mode=TwoWay}"
+                          AutoGenerateColumns="False" CanUserAddRows="False"
+                          IsReadOnly="False" HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal" SelectionMode="Single">
+                    <DataGrid.Columns>
+                        <DataGridCheckBoxColumn Binding="{Binding IsEnabled, UpdateSourceTrigger=PropertyChanged}" Width="40"
+                                                Header="{Binding [Main_Col_On], Source={x:Static loc:LocalizationManager.Instance}}" />
+                        <DataGridTextColumn Binding="{Binding Trigger}" Width="140" IsReadOnly="True"
+                                            Header="{Binding [Main_Col_Trigger], Source={x:Static loc:LocalizationManager.Instance}}" />
+                        <DataGridTextColumn Binding="{Binding ContentPreview}" Width="*" IsReadOnly="True"
+                                            Header="{Binding [Main_Col_Content], Source={x:Static loc:LocalizationManager.Instance}}" />
+                        <DataGridTextColumn Binding="{Binding UsageCount}" Width="60" IsReadOnly="True"
+                                            Header="{Binding [Main_Col_Uses], Source={x:Static loc:LocalizationManager.Instance}}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- Empty-state hint shown when there are no snippets yet. -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}"
+                            IsHitTestVisible="False">
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="#888" HorizontalAlignment="Center"
+                               Text="{Binding [Main_Empty_Title], Source={x:Static loc:LocalizationManager.Instance}}" />
+                    <TextBlock Margin="0,6,0,0" Foreground="#999" HorizontalAlignment="Center" TextAlignment="Center"
+                               Text="{Binding [Main_Empty_Hint], Source={x:Static loc:LocalizationManager.Instance}}" />
+                </StackPanel>
+            </Grid>
+        </DockPanel>
+
+        <!-- Status bar -->
+        <StatusBar Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8,0,0">
+            <TextBlock Text="{Binding StatusMessage}" />
+        </StatusBar>
+    </Grid>
+</Window>

@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    # Windows-hosted: the app and its integration tests target net9.0-windows.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore SmartTyping.sln
+
+      - name: Build
+        run: dotnet build SmartTyping.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test SmartTyping.sln -c Release --no-build --verbosity normal

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
+    <AssemblyName>SmartTyping</AssemblyName>
+    <RootNamespace>SmartTyping.UI</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Ship the icon next to the exe so the tray can load it at runtime. -->
+    <None Include="..\..\assets\app.ico" Link="assets\app.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SmartTyping.Application\SmartTyping.Application.csproj" />
+    <ProjectReference Include="..\SmartTyping.Domain\SmartTyping.Domain.csproj" />
+    <ProjectReference Include="..\SmartTyping.Infrastructure\SmartTyping.Infrastructure.csproj" />
+    <ProjectReference Include="..\SmartTyping.Shared\SmartTyping.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>

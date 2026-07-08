@@ -1,0 +1,45 @@
+<Window x:Class="SmartTyping.UI.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SmartTyping.UI.Localization"
+        Title="{Binding [Settings_Title], Source={x:Static loc:LocalizationManager.Instance}}"
+        Height="330" Width="400"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        FontFamily="Segoe UI" FontSize="13">
+    <StackPanel Margin="16">
+        <TextBlock Text="{Binding [Settings_Features], Source={x:Static loc:LocalizationManager.Instance}}"
+                   FontWeight="SemiBold" Margin="0,0,0,8" />
+        <CheckBox Content="{Binding [Settings_ExpansionEnabled], Source={x:Static loc:LocalizationManager.Instance}}"
+                  IsChecked="{Binding SnippetExpansionEnabled, Mode=TwoWay}" Margin="0,4" />
+        <CheckBox Content="{Binding [Settings_CorrectionEnabled], Source={x:Static loc:LocalizationManager.Instance}}"
+                  IsChecked="{Binding LanguageCorrectionEnabled, Mode=TwoWay}" Margin="0,4" />
+
+        <TextBlock Text="{Binding [Settings_Hotkeys], Source={x:Static loc:LocalizationManager.Instance}}"
+                   FontWeight="SemiBold" Margin="0,16,0,4" />
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{Binding [Settings_ConvertLayout], Source={x:Static loc:LocalizationManager.Instance}}" Width="120" />
+            <TextBlock Text="{Binding ConversionHotkeyText}" FontWeight="SemiBold" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+            <TextBlock Text="{Binding [Settings_ExpandSnippet], Source={x:Static loc:LocalizationManager.Instance}}" Width="120" />
+            <TextBlock Text="{Binding ExpansionHotkeyText}" FontWeight="SemiBold" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+            <TextBlock Text="{Binding [Settings_Language], Source={x:Static loc:LocalizationManager.Instance}}"
+                       Width="120" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}"
+                      DisplayMemberPath="DisplayName" Width="140" />
+        </StackPanel>
+
+        <CheckBox Content="{Binding [Settings_StartWithWindows], Source={x:Static loc:LocalizationManager.Instance}}"
+                  IsChecked="{Binding StartWithWindows, Mode=TwoWay}" Margin="0,14,0,0" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="{Binding [Settings_OpenLogs], Source={x:Static loc:LocalizationManager.Instance}}"
+                    Padding="12,4" Margin="0,0,8,0" Click="OnOpenLogsClick" />
+            <Button Content="{Binding [Settings_Close], Source={x:Static loc:LocalizationManager.Instance}}"
+                    Padding="16,4" IsCancel="True" Click="OnCloseClick" />
+        </StackPanel>
+    </StackPanel>
+</Window>

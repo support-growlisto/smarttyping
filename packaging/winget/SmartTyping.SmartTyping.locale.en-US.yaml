@@ -1,0 +1,21 @@
+# Default-locale manifest (winget).
+PackageIdentifier: SmartTyping.SmartTyping
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: SmartTyping
+PackageName: SmartTyping Desktop
+License: MIT
+ShortDescription: Thai/English layout correction and text expansion for Windows.
+Description: >-
+  SmartTyping is a local-first Windows productivity app that fixes wrong-keyboard-layout
+  Thai/English text and expands short triggers into templated snippets — all on an explicit
+  hotkey, with nothing sent off the device.
+Moniker: smarttyping
+Tags:
+  - thai
+  - keyboard
+  - text-expansion
+  - productivity
+  - typing
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0
