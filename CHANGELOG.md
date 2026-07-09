@@ -79,6 +79,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+### Notifications
+- **Tray notifications can be switched off** — Settings → "Show notifications". Gated inside `TrayIconService` rather than at each call site, so no feature can pop a balloon the user disabled. The features themselves keep working silently.
+
+### Layout correction now works both ways
+- **Thai layout, English intended** — typing `hello` on the Thai layout produces `้ำสสน`; it is now corrected back to `hello` and the keyboard is switched to English. Detection is structural: Thai that cannot exist (a word beginning with a tone mark or attached vowel, a tone on a tone, a vowel on a vowel) means the user meant English. Deliberately conservative, so correctly-typed Thai (`น้ำ`, `ที่`, `ทดสอบ`, `ไทย`) is never touched — the trade-off is that English whose Thai rendering happens to be structurally valid (`world` → `ไนพสก`) isn't auto-corrected; `Ctrl+Shift+L` still converts it.
+- `LayoutCorrection` now carries the direction, and `IKeyboardLayoutSwitcher.SwitchForeground(toThai)` switches either way.
+
 ### Automatic, no-hotkey typing (opt-in)
 - **Type-to-expand** — turn on "Expand automatically as I type" and a trigger expands **the moment you finish typing it** (e.g. `/sig`), with no hotkey and no space. A trigger that is a prefix of a longer one (`/s` vs `/sig`) instead waits for a space/tab, so you can always type the longer one; that rule lives in a pure, unit-tested `TriggerIndex`. Skips detected password fields.
 - **Correct-as-you-type layout fixes** — with "Fix automatically" on, wrong-layout Thai (e.g. `l;ylfu`) is corrected **as soon as it's recognisable, without pressing space**, and the keyboard is switched to Thai so the rest of the word types correctly. That final step matters: correcting the characters typed so far is useless if the next ones keep coming out latin.

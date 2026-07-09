@@ -72,6 +72,10 @@ internal static class Strings
             ["Hotkey_Prompt"] = ("Press a key combination…", "กดคีย์ผสมที่ต้องการ…"),
             ["Hotkey_Duplicate"] = ("That combination is already used by another action.", "คีย์นี้ถูกใช้กับคำสั่งอื่นแล้ว"),
             ["Settings_StartWithWindows"] = ("Start with Windows", "เปิดพร้อม Windows"),
+            ["Settings_Notifications"] = ("Show notifications", "แสดงการแจ้งเตือน"),
+            ["Settings_NotificationsHint"] = (
+                "Tray pop-ups after a conversion, expansion or AI edit. Turn off to work silently — the features still run.",
+                "ข้อความเด้งมุมจอหลังแปลงภาษา ขยาย snippet หรือ AI · ปิดได้เพื่อให้เงียบ ฟีเจอร์ยังทำงานปกติ"),
             ["Settings_Language"] = ("Language:", "ภาษา:"),
             ["Settings_Theme"] = ("Theme:", "ธีม:"),
             ["Theme_System"] = ("System", "ตามระบบ"),

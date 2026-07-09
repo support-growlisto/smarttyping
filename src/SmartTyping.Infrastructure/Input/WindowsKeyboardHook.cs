@@ -253,25 +253,55 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
 
         var word = _wordBuffer.ToString();
-        if (word == _lastSuggestedWord ||
-            NativeMethods.ForegroundLayoutIsThai() ||
-            !WrongLayoutDetector.LooksLikeWrongLayoutThai(word, strict: true))
+        if (word == _lastSuggestedWord)
         {
             return;
         }
 
-        var suggestion = _converter.Convert(word, Domain.Enums.ConversionDirection.EnglishToThai);
-        if (string.Equals(suggestion, word, StringComparison.Ordinal))
+        var payload = BuildCorrection(word, string.Empty);
+        if (payload is null)
         {
             return;
         }
 
         _lastSuggestedWord = word;
         _wordBuffer.Clear();
-
-        // No delimiter: only the typed characters are replaced.
-        var payload = new LayoutCorrection(word, suggestion, string.Empty);
         ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
+    }
+
+    /// <summary>
+    /// Decides whether <paramref name="word"/> (the latin characters the physical keys represent) needs
+    /// correcting, in either direction, and builds the replacement. Returns null when nothing to do.
+    /// </summary>
+    private LayoutCorrection? BuildCorrection(string word, string boundary)
+    {
+        if (NativeMethods.ForegroundLayoutIsThai())
+        {
+            // Thai layout is active, so what's on screen is the Thai these keys produce. If that Thai is
+            // structurally impossible, the user meant English — put the latin characters back.
+            var onScreen = _converter.Convert(word, Domain.Enums.ConversionDirection.EnglishToThai);
+            if (onScreen.Length != word.Length ||
+                !WrongLayoutDetector.LooksLikeWrongLayoutEnglish(onScreen))
+            {
+                return null;
+            }
+
+            return new LayoutCorrection(onScreen, word, boundary, ToThai: false);
+        }
+
+        // A latin layout is active: the classic "forgot to switch to Thai" case.
+        if (!WrongLayoutDetector.LooksLikeWrongLayoutThai(word, strict: true))
+        {
+            return null;
+        }
+
+        var thai = _converter.Convert(word, Domain.Enums.ConversionDirection.EnglishToThai);
+        if (string.Equals(thai, word, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return new LayoutCorrection(word, thai, boundary, ToThai: true);
     }
 
     // Expand the moment the typed text forms a complete trigger — no space needed. The predicate is
@@ -343,13 +373,27 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             return;
         }
 
-        // Automatic replacement runs only on a space boundary (so we never disturb a line break) and
-        // uses the stricter heuristic that ignores apostrophes (leaves English contractions alone).
+        // Automatic replacement runs only on a space boundary, so we never disturb a line break.
         var autoApply = AutoApplySuggestions && atSpace;
 
-        // If the active layout is already Thai, what's on screen is Thai — nothing to do.
+        if (autoApply)
+        {
+            var correct = LayoutAutoCorrectRequested;
+            // The space that closed the word is deleted with it and re-inserted after the fix.
+            var payload = correct is null ? null : BuildCorrection(word, " ");
+            if (payload is null)
+            {
+                return;
+            }
+
+            _lastSuggestedWord = word;
+            ThreadPool.QueueUserWorkItem(_ => correct!.Invoke(this, payload));
+            return;
+        }
+
+        // Hint-only mode still covers the classic latin-typed-Thai case.
         if (NativeMethods.ForegroundLayoutIsThai() ||
-            !WrongLayoutDetector.LooksLikeWrongLayoutThai(word, strict: autoApply))
+            !WrongLayoutDetector.LooksLikeWrongLayoutThai(word))
         {
             return;
         }
@@ -361,20 +405,6 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
 
         _lastSuggestedWord = word;
-
-        if (autoApply)
-        {
-            var correct = LayoutAutoCorrectRequested;
-            if (correct is not null)
-            {
-                // The space that closed the word is deleted with it and re-inserted after the fix.
-                var payload = new LayoutCorrection(word, suggestion, " ");
-                ThreadPool.QueueUserWorkItem(_ => correct.Invoke(this, payload));
-            }
-
-            return;
-        }
-
         var suggest = LayoutSuggestionRaised;
         if (suggest is not null)
         {

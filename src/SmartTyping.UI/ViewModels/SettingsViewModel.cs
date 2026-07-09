@@ -48,6 +48,7 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly IKeyboardHook _hook;
     private readonly IUpdateService _updates;
     private readonly IDialogService _dialogs;
+    private readonly TrayIconService _tray;
     private readonly Dictionary<HotkeyAction, Hotkey> _hotkeys = new(SettingsService.DefaultHotkeys);
     private bool _loading;
 
@@ -56,6 +57,7 @@ public sealed class SettingsViewModel : ObservableObject
     private bool _autoCorrectSuggestEnabled;
     private bool _autoCorrectAutoApply;
     private bool _autoExpandEnabled;
+    private bool _notificationsEnabled = true;
     private string _aiApiKey = string.Empty;
     private bool _startWithWindows;
     private bool _checkForUpdates;
@@ -63,13 +65,14 @@ public sealed class SettingsViewModel : ObservableObject
     private LanguageOption _selectedLanguage;
     private ThemeOption _selectedTheme;
 
-    public SettingsViewModel(SettingsService settings, IStartupService startup, IKeyboardHook hook, IUpdateService updates, IDialogService dialogs)
+    public SettingsViewModel(SettingsService settings, IStartupService startup, IKeyboardHook hook, IUpdateService updates, IDialogService dialogs, TrayIconService tray)
     {
         _settings = settings;
         _startup = startup;
         _hook = hook;
         _updates = updates;
         _dialogs = dialogs;
+        _tray = tray;
         _selectedLanguage = Languages[0];
         CheckForUpdatesCommand = new AsyncRelayCommand(CheckForUpdatesNowAsync);
 
@@ -249,6 +252,23 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    public bool NotificationsEnabled
+    {
+        get => _notificationsEnabled;
+        set
+        {
+            if (SetProperty(ref _notificationsEnabled, value))
+            {
+                // Live-apply so the next expansion is already silent.
+                _tray.NotificationsEnabled = value;
+                if (!_loading)
+                {
+                    _ = _settings.SetNotificationsEnabledAsync(value);
+                }
+            }
+        }
+    }
+
     public string AiApiKey
     {
         get => _aiApiKey;
@@ -330,6 +350,7 @@ public sealed class SettingsViewModel : ObservableObject
             AutoCorrectSuggestEnabled = await _settings.IsAutoCorrectSuggestEnabledAsync();
             AutoCorrectAutoApply = await _settings.IsAutoCorrectAutoApplyEnabledAsync();
             AutoExpandEnabled = await _settings.IsAutoExpandEnabledAsync();
+            NotificationsEnabled = await _settings.IsNotificationsEnabledAsync();
             AiApiKey = await _settings.GetAiApiKeyAsync();
             // The registry is the source of truth for auto-start.
             StartWithWindows = _startup.IsEnabled();

@@ -67,6 +67,11 @@
 
         <CheckBox Content="{Binding [Settings_StartWithWindows], Source={x:Static loc:LocalizationManager.Instance}}"
                   IsChecked="{Binding StartWithWindows, Mode=TwoWay}" Margin="0,14,0,0" />
+        <CheckBox Content="{Binding [Settings_Notifications], Source={x:Static loc:LocalizationManager.Instance}}"
+                  IsChecked="{Binding NotificationsEnabled, Mode=TwoWay}" Margin="0,8,0,0" />
+        <TextBlock Text="{Binding [Settings_NotificationsHint], Source={x:Static loc:LocalizationManager.Instance}}"
+                   TextWrapping="Wrap" FontSize="11" Margin="24,0,0,0"
+                   Foreground="{DynamicResource Brush.SubtleForeground}" />
 
         <TextBlock Text="{Binding [Settings_Updates], Source={x:Static loc:LocalizationManager.Instance}}"
                    FontWeight="SemiBold" Margin="0,16,0,4" />

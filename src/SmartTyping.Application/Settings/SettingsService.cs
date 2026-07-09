@@ -66,6 +66,13 @@ public sealed class SettingsService
     public Task SetAutoExpandEnabledAsync(bool enabled) =>
         SetBoolAsync(SettingKeys.AutoExpandSnippets, enabled);
 
+    /// <summary>Tray balloon notifications (converted / expanded / AI). On by default.</summary>
+    public Task<bool> IsNotificationsEnabledAsync() =>
+        GetBoolAsync(SettingKeys.ShowNotifications, defaultValue: true);
+
+    public Task SetNotificationsEnabledAsync(bool enabled) =>
+        SetBoolAsync(SettingKeys.ShowNotifications, enabled);
+
     /// <summary>The AI provider id (e.g. "gemini"). Defaults to Gemini.</summary>
     public async Task<string> GetAiProviderAsync()
     {

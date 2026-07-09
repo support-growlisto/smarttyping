@@ -198,8 +198,10 @@ internal static class NativeMethods
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
-    /// <summary>The installed Thai keyboard layout, or <see cref="IntPtr.Zero"/> if none.</summary>
-    public static IntPtr FindThaiLayout()
+    public const int LANG_ENGLISH = 0x09;
+
+    /// <summary>The installed keyboard layout for <paramref name="primaryLanguage"/>, or zero.</summary>
+    public static IntPtr FindLayout(int primaryLanguage)
     {
         var count = GetKeyboardLayoutList(0, null);
         if (count == 0)
@@ -211,7 +213,7 @@ internal static class NativeMethods
         GetKeyboardLayoutList((int)count, list);
         foreach (var hkl in list)
         {
-            if ((hkl.ToInt64() & 0x3FF) == LANG_THAI)
+            if ((hkl.ToInt64() & 0x3FF) == primaryLanguage)
             {
                 return hkl;
             }
@@ -219,6 +221,9 @@ internal static class NativeMethods
 
         return IntPtr.Zero;
     }
+
+    /// <summary>The installed Thai keyboard layout, or <see cref="IntPtr.Zero"/> if none.</summary>
+    public static IntPtr FindThaiLayout() => FindLayout(LANG_THAI);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

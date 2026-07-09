@@ -15,12 +15,12 @@ public sealed class WindowsKeyboardLayoutSwitcher : IKeyboardLayoutSwitcher
 
     public bool IsThaiAvailable => NativeMethods.FindThaiLayout() != IntPtr.Zero;
 
-    public bool SwitchForegroundToThai()
+    public bool SwitchForeground(bool toThai)
     {
         try
         {
-            var thai = NativeMethods.FindThaiLayout();
-            if (thai == IntPtr.Zero)
+            var target = NativeMethods.FindLayout(toThai ? NativeMethods.LANG_THAI : NativeMethods.LANG_ENGLISH);
+            if (target == IntPtr.Zero)
             {
                 return false;
             }
@@ -31,11 +31,11 @@ public sealed class WindowsKeyboardLayoutSwitcher : IKeyboardLayoutSwitcher
                 return false;
             }
 
-            return NativeMethods.PostMessage(window, NativeMethods.WM_INPUTLANGCHANGEREQUEST, IntPtr.Zero, thai);
+            return NativeMethods.PostMessage(window, NativeMethods.WM_INPUTLANGCHANGEREQUEST, IntPtr.Zero, target);
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Failed to switch the foreground layout to Thai.");
+            _logger.LogDebug(ex, "Failed to switch the foreground keyboard layout.");
             return false;
         }
     }

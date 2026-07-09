@@ -27,6 +27,23 @@ public sealed class WrongLayoutDetectorTests
     }
 
     [Theory]
+    // English typed while the Thai layout was active — the Thai on screen is structurally impossible.
+    [InlineData("้ำสสน", true)]   // "hello" -> starts with a tone mark
+    [InlineData("ะ้ำ", true)]      // "the"   -> starts with a standalone vowel
+    // Correctly typed Thai must never be flagged.
+    [InlineData("สวัสดี", false)]
+    [InlineData("ทดสอบ", false)]
+    [InlineData("น้ำ", false)]     // tone mark on a consonant is fine
+    [InlineData("ที่", false)]      // tone mark on a vowel is fine
+    [InlineData("ไทย", false)]     // leading vowel is a valid start
+    [InlineData("hello", false)]   // not Thai at all
+    [InlineData("ก", false)]       // too short
+    public void LooksLikeWrongLayoutEnglish(string thai, bool expected)
+    {
+        Assert.Equal(expected, WrongLayoutDetector.LooksLikeWrongLayoutEnglish(thai));
+    }
+
+    [Theory]
     [InlineData("don't", false)]   // apostrophe-only: NOT auto-corrected (English contraction)
     [InlineData("it's", false)]
     [InlineData("l;ylfu", true)]   // ';' still triggers strict mode

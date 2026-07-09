@@ -39,10 +39,16 @@ public sealed class TrayIconService : IDisposable
         _notifyIcon.DoubleClick += (_, _) => ShowMainWindow();
     }
 
+    /// <summary>
+    /// When false, <see cref="ShowBalloon"/> does nothing. Gated here rather than at each call site so
+    /// no feature can pop a notification the user switched off.
+    /// </summary>
+    public bool NotificationsEnabled { get; set; } = true;
+
     /// <summary>Shows a brief balloon notification (e.g. after a conversion).</summary>
     public void ShowBalloon(string title, string message)
     {
-        if (_notifyIcon is null)
+        if (_notifyIcon is null || !NotificationsEnabled)
         {
             return;
         }

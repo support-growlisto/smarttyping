@@ -47,4 +47,75 @@ public static class WrongLayoutDetector
 
         return hasLetter && hasThaiConsonantPunctuation;
     }
+
+    // Thai characters that can never begin a syllable: tone marks, dependent (attached) vowels, and
+    // standalone marks. A word starting with one of these is not Thai the user meant to type.
+    private const string NonInitial = "ัิีึืุู็่้๊๋์ํำะๅๆฯ";
+
+    private static bool IsToneMark(char c) => c is '่' or '้' or '๊' or '๋';
+
+    // Vowels that attach above/below a consonant. Thai stacks a vowel and a tone (ที่) or a tone and
+    // sara-am (น้ำ), so only vowel-on-vowel and tone-on-tone are impossible.
+    private static bool IsAttachedVowel(char c) => c is 'ั' or 'ิ' or 'ี' or 'ึ' or 'ื' or 'ุ' or 'ู' or '็' or '์' or 'ํ';
+
+    // Anything that cannot begin a syllable.
+    private static bool IsDependentMark(char c) => NonInitial.IndexOf(c) >= 0;
+
+    private static bool IsThai(char c) => c is >= '฀' and <= '๿';
+
+    /// <summary>
+    /// Returns true when <paramref name="thaiText"/> — the Thai that appeared on screen because the
+    /// Thai layout was active — is structurally impossible, i.e. the user actually meant to type
+    /// English. Conservative: it only fires on sequences real Thai cannot produce (a word beginning
+    /// with a tone mark or attached vowel, or two attached marks in a row), so correctly typed Thai is
+    /// never touched. It therefore misses English words whose Thai rendering happens to look valid.
+    /// </summary>
+    public static bool LooksLikeWrongLayoutEnglish(string thaiText)
+    {
+        if (string.IsNullOrEmpty(thaiText) || thaiText.Length < 2)
+        {
+            return false;
+        }
+
+        var thaiCount = 0;
+        foreach (var c in thaiText)
+        {
+            if (IsThai(c))
+            {
+                thaiCount++;
+            }
+        }
+
+        // Require it to actually be Thai text; a mixed/latin string isn't our business here.
+        if (thaiCount != thaiText.Length)
+        {
+            return false;
+        }
+
+        if (IsDependentMark(thaiText[0]))
+        {
+            return true;
+        }
+
+        for (var i = 1; i < thaiText.Length; i++)
+        {
+            var prev = thaiText[i - 1];
+            var cur = thaiText[i];
+
+            // Two tones, or two attached vowels, in a row cannot occur.
+            if ((IsToneMark(cur) && IsToneMark(prev)) ||
+                (IsAttachedVowel(cur) && IsAttachedVowel(prev)))
+            {
+                return true;
+            }
+
+            // A tone mark must sit on a consonant or its vowel — never on a leading vowel.
+            if (IsToneMark(cur) && prev is 'เ' or 'แ' or 'โ' or 'ใ' or 'ไ')
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

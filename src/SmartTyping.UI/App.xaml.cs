@@ -123,6 +123,15 @@ public partial class App : System.Windows.Application
         // Tray icon.
         _tray = _services.GetRequiredService<TrayIconService>();
         _tray.Initialize(mainWindow, ExitApplication);
+        try
+        {
+            _tray.NotificationsEnabled = _services.GetRequiredService<SettingsService>()
+                .IsNotificationsEnabledAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to read the notifications setting; leaving them enabled.");
+        }
 
         // Global hotkeys (must start on the UI thread — it owns the message loop that hooks require).
         _hotkey = _services.GetRequiredService<LanguageHotkeyCoordinator>();
@@ -314,9 +323,9 @@ public partial class App : System.Windows.Application
                 return;
             }
 
-            // The user meant to type Thai, so switch the input language — otherwise the rest of the
-            // word keeps coming out as latin and they'd have to fix it again.
-            _services.GetRequiredService<IKeyboardLayoutSwitcher>().SwitchForegroundToThai();
+            // The user meant the other language, so switch the input language — otherwise the rest of
+            // the word keeps coming out wrong and they'd have to fix it again.
+            _services.GetRequiredService<IKeyboardLayoutSwitcher>().SwitchForeground(correction.ToThai);
 
             var loc = Localization.LocalizationManager.Instance;
             Dispatcher.Invoke(() => _tray?.ShowBalloon(loc["Tray_AutoFixed"],
