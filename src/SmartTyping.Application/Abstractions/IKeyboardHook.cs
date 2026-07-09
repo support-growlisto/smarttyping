@@ -47,6 +47,14 @@ public interface IKeyboardHook : IDisposable
     bool AutoExpandEnabled { get; set; }
 
     /// <summary>
+    /// Fast, synchronous test for "the text typed so far is a complete snippet trigger". Set by the
+    /// auto-expand coordinator from an in-memory index; called on the hook thread after every
+    /// keystroke, so it must not touch the database or block. When it returns true the trigger is
+    /// expanded immediately, without waiting for a space.
+    /// </summary>
+    Func<string, bool>? IsCompleteTrigger { get; set; }
+
+    /// <summary>
     /// When true (and <see cref="SuggestionsEnabled"/> is on), a detected wrong-layout word is
     /// corrected automatically on the next space instead of only being suggested.
     /// </summary>

@@ -38,6 +38,68 @@ internal static class KeyboardSender
         NativeMethods.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<NativeMethods.INPUT>());
     }
 
+    /// <summary>
+    /// Types <paramref name="text"/> directly as Unicode keystrokes (<c>KEYEVENTF_UNICODE</c>), without
+    /// touching the clipboard. Used for inline auto-replacement, where a clipboard paste races its own
+    /// save/restore. Newlines are sent as Enter so multi-line snippets break correctly.
+    /// </summary>
+    public static void SendUnicode(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        var run = new List<NativeMethods.INPUT>(text.Length * 2);
+
+        void Flush()
+        {
+            if (run.Count == 0)
+            {
+                return;
+            }
+
+            var batch = run.ToArray();
+            NativeMethods.SendInput((uint)batch.Length, batch, Marshal.SizeOf<NativeMethods.INPUT>());
+            run.Clear();
+        }
+
+        foreach (var ch in text)
+        {
+            if (ch == '\r')
+            {
+                continue; // the '\n' below emits the line break
+            }
+
+            if (ch == '\n')
+            {
+                Flush();
+                TapKey(NativeMethods.VK_RETURN, 1);
+                continue;
+            }
+
+            run.Add(UnicodeEvent(ch, isUp: false));
+            run.Add(UnicodeEvent(ch, isUp: true));
+        }
+
+        Flush();
+    }
+
+    private static NativeMethods.INPUT UnicodeEvent(char ch, bool isUp) => new()
+    {
+        type = NativeMethods.INPUT_KEYBOARD,
+        u = new NativeMethods.InputUnion
+        {
+            ki = new NativeMethods.KEYBDINPUT
+            {
+                wVk = 0,
+                wScan = ch,
+                dwFlags = NativeMethods.KEYEVENTF_UNICODE | (isUp ? NativeMethods.KEYEVENTF_KEYUP : 0),
+                dwExtraInfo = NativeMethods.SelfInjectedTag
+            }
+        }
+    };
+
     /// <summary>Taps a virtual-key <paramref name="count"/> times (e.g. VK_LEFT to move the caret back).</summary>
     public static void TapKey(int vk, int count)
     {
@@ -68,7 +130,8 @@ internal static class KeyboardSender
             ki = new NativeMethods.KEYBDINPUT
             {
                 wVk = vk,
-                dwFlags = isUp ? NativeMethods.KEYEVENTF_KEYUP : 0
+                dwFlags = isUp ? NativeMethods.KEYEVENTF_KEYUP : 0,
+                dwExtraInfo = NativeMethods.SelfInjectedTag
             }
         }
     };

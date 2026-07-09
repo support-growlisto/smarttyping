@@ -55,6 +55,14 @@ internal static class NativeMethods
     public const uint KEYEVENTF_KEYUP = 0x0002;
     public const uint KEYEVENTF_UNICODE = 0x0004;
 
+    /// <summary>
+    /// Stamped into <c>dwExtraInfo</c> on every keystroke this app synthesizes. The low-level hook
+    /// ignores events carrying it, so text we type back (a snippet expansion, a layout correction)
+    /// can never re-enter the word buffer or re-trigger a hotkey. Without this, the app corrects and
+    /// expands its own output.
+    /// </summary>
+    public static readonly IntPtr SelfInjectedTag = new(0x53547970); // 'STyp'
+
     // Window style flags for secure-field detection.
     public const int GWL_STYLE = -16;
     public const int ES_PASSWORD = 0x0020;

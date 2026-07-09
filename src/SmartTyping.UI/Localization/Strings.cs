@@ -51,8 +51,8 @@ internal static class Strings
             ["Settings_ExpansionEnabled"] = ("Enable snippet expansion", "เปิดการขยาย snippet"),
             ["Settings_AutoExpand"] = ("Expand automatically as I type", "ขยายอัตโนมัติขณะพิมพ์"),
             ["Settings_AutoExpandHint"] = (
-                "Type a trigger (e.g. /sig) then a space or tab and it's replaced instantly — no hotkey. Skips password fields.",
-                "พิมพ์คำสั่ง (เช่น /sig) แล้วเคาะ space หรือ tab จะแทนที่ให้ทันที ไม่ต้องกดคีย์ลัด · ข้ามช่องรหัสผ่าน"),
+                "Finish typing a trigger (e.g. /sig) and it's replaced instantly — no hotkey, no space. Triggers that start another trigger expand on space/tab instead. Skips password fields.",
+                "พิมพ์คำสั่งให้ครบ (เช่น /sig) แล้วแทนที่ทันที ไม่ต้องกดคีย์ลัด ไม่ต้องเคาะ space · คำสั่งที่เป็นส่วนต้นของคำสั่งอื่นจะรอ space/tab · ข้ามช่องรหัสผ่าน"),
             ["Settings_CorrectionEnabled"] = ("Enable language correction", "เปิดการแก้ภาษา"),
             ["Settings_AutoCorrectSuggest"] = ("Suggest layout fixes as I type", "แนะนำการแก้เลย์เอาต์ขณะพิมพ์"),
             ["Settings_AutoCorrectSuggestHint"] = (

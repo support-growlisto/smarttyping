@@ -6,29 +6,41 @@ using SmartTyping.Application.Snippets;
 namespace SmartTyping.UI.Services;
 
 /// <summary>
-/// Automatic snippet expansion as you type (opt-in): when the user finishes a word with a space or
-/// tab and that word is a snippet trigger, the trigger is replaced in place with the rendered
-/// snippet — no hotkey needed. Skips detected password fields. Failures are logged and swallowed.
+/// Automatic snippet expansion as you type (opt-in), with no hotkey:
+/// <list type="bullet">
+/// <item>the moment the typed text forms a complete trigger (e.g. <c>/sig</c>) it is replaced; and</item>
+/// <item>triggers that are a prefix of a longer trigger instead expand on a space or tab.</item>
+/// </list>
+/// Skips detected password fields. Failures are logged and swallowed.
 /// </summary>
 public sealed class AutoExpandCoordinator : IDisposable
 {
+    // How often the in-memory trigger index is refreshed from the database. The index is consulted on
+    // the keyboard-hook thread, so it can never hit the DB itself.
+    private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(3);
+
     private readonly IKeyboardHook _hook;
     private readonly SnippetExpansionService _expansion;
+    private readonly ISnippetRepository _snippets;
     private readonly IInlineReplacer _replacer;
     private readonly ISecureInputDetector _secureInput;
     private readonly ILogger<AutoExpandCoordinator> _logger;
 
+    private volatile TriggerIndex _index = TriggerIndex.Empty;
+    private System.Threading.Timer? _refreshTimer;
     private int _busy;
 
     public AutoExpandCoordinator(
         IKeyboardHook hook,
         SnippetExpansionService expansion,
+        ISnippetRepository snippets,
         IInlineReplacer replacer,
         ISecureInputDetector secureInput,
         ILogger<AutoExpandCoordinator> logger)
     {
         _hook = hook;
         _expansion = expansion;
+        _snippets = snippets;
         _replacer = replacer;
         _secureInput = secureInput;
         _logger = logger;
@@ -37,9 +49,33 @@ public sealed class AutoExpandCoordinator : IDisposable
     /// <summary>Raised after a successful auto-expansion (for UI feedback).</summary>
     public event EventHandler<string>? Expanded;
 
-    public void Start() => _hook.SnippetWordCompleted += OnWordCompleted;
+    public void Start()
+    {
+        _hook.SnippetWordCompleted += OnWordCompleted;
+        _hook.IsCompleteTrigger = word => _index.IsCompleteTrigger(word);
+        _refreshTimer = new System.Threading.Timer(_ => _ = RefreshIndexAsync(), null, TimeSpan.Zero, RefreshInterval);
+    }
 
-    public void Stop() => _hook.SnippetWordCompleted -= OnWordCompleted;
+    public void Stop()
+    {
+        _hook.SnippetWordCompleted -= OnWordCompleted;
+        _hook.IsCompleteTrigger = null;
+        _refreshTimer?.Dispose();
+        _refreshTimer = null;
+    }
+
+    private async Task RefreshIndexAsync()
+    {
+        try
+        {
+            var snippets = await _snippets.GetAllAsync();
+            _index = new TriggerIndex(snippets.Where(s => s.IsEnabled).Select(s => s.Trigger));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to refresh the auto-expand trigger index.");
+        }
+    }
 
     private async void OnWordCompleted(object? sender, WordBoundary e)
     {
@@ -63,8 +99,8 @@ public sealed class AutoExpandCoordinator : IDisposable
                 return;
             }
 
-            // Delete the trigger + its delimiter, then insert the rendered snippet followed by the
-            // same delimiter so the user's spacing is preserved.
+            // Delete the trigger (plus its delimiter, when one closed the word) and insert the
+            // rendered snippet followed by the same delimiter so the user's spacing is preserved.
             var replacement = result.ExpandedText + e.Boundary;
             if (await _replacer.ReplaceAsync(e.Word.Length + e.Boundary.Length, replacement, result.CursorOffset))
             {

@@ -68,6 +68,8 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
     public bool AutoExpandEnabled { get; set; }
 
+    public Func<string, bool>? IsCompleteTrigger { get; set; }
+
     public void UpdateBindings(IReadOnlyDictionary<HotkeyAction, Hotkey> bindings) => _bindings = bindings;
 
     public void Start()
@@ -139,6 +141,15 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             if (nCode >= 0 && IsKeyDown(wParam))
             {
                 var info = System.Runtime.InteropServices.Marshal.PtrToStructure<NativeMethods.KBDLLHOOKSTRUCT>(lParam);
+
+                // Ignore the keystrokes we synthesize ourselves. Otherwise the text we type back (a
+                // snippet expansion, a layout correction) feeds straight back into the word buffer and
+                // the features correct/expand their own output.
+                if (info.dwExtraInfo == NativeMethods.SelfInjectedTag)
+                {
+                    return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+                }
+
                 var vk = (int)info.vkCode;
                 var mods = CurrentModifiers();
 
@@ -217,7 +228,38 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         else if (_wordBuffer.Length < 48)
         {
             _wordBuffer.Append(c);
+            TryExpandCompletedTrigger();
         }
+    }
+
+    // Expand the moment the typed text forms a complete trigger — no space needed. The predicate is
+    // an in-memory lookup, and triggers that prefix a longer trigger are excluded from it (those
+    // still expand on a space/tab delimiter instead).
+    private void TryExpandCompletedTrigger()
+    {
+        if (!AutoExpandEnabled || _wordBuffer.Length < 2)
+        {
+            return;
+        }
+
+        var matcher = IsCompleteTrigger;
+        var handler = SnippetWordCompleted;
+        if (matcher is null || handler is null)
+        {
+            return;
+        }
+
+        var word = _wordBuffer.ToString();
+        if (!matcher(word))
+        {
+            return;
+        }
+
+        _wordBuffer.Clear();
+
+        // Empty delimiter: only the trigger itself is deleted and replaced.
+        var payload = new WordBoundary(word, string.Empty);
+        ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
     }
 
     // Raise the auto-expand probe for the finished word (the coordinator decides if it's a trigger).
