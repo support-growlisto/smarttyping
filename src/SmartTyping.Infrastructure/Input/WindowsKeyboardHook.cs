@@ -58,13 +58,15 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
     public event EventHandler<LayoutSuggestion>? LayoutSuggestionRaised;
 
-    public event EventHandler<LayoutSuggestion>? LayoutAutoCorrectRequested;
+    public event EventHandler<LayoutCorrection>? LayoutAutoCorrectRequested;
 
     public event EventHandler<WordBoundary>? SnippetWordCompleted;
 
     public bool SuggestionsEnabled { get; set; }
 
     public bool AutoApplySuggestions { get; set; }
+
+    public bool ImmediateLayoutCorrect { get; set; }
 
     public bool AutoExpandEnabled { get; set; }
 
@@ -228,31 +230,71 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         else if (_wordBuffer.Length < 48)
         {
             _wordBuffer.Append(c);
-            TryExpandCompletedTrigger();
+            if (!TryExpandCompletedTrigger())
+            {
+                TryCorrectLayoutMidWord();
+            }
         }
+    }
+
+    // Correct wrong-layout Thai the moment it is recognisable, without waiting for a space. The
+    // handler also switches the input language to Thai, so the remainder of the word types correctly.
+    private void TryCorrectLayoutMidWord()
+    {
+        if (!SuggestionsEnabled || !AutoApplySuggestions || !ImmediateLayoutCorrect || _wordBuffer.Length < 3)
+        {
+            return;
+        }
+
+        var handler = LayoutAutoCorrectRequested;
+        if (handler is null)
+        {
+            return;
+        }
+
+        var word = _wordBuffer.ToString();
+        if (word == _lastSuggestedWord ||
+            NativeMethods.ForegroundLayoutIsThai() ||
+            !WrongLayoutDetector.LooksLikeWrongLayoutThai(word, strict: true))
+        {
+            return;
+        }
+
+        var suggestion = _converter.Convert(word, Domain.Enums.ConversionDirection.EnglishToThai);
+        if (string.Equals(suggestion, word, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _lastSuggestedWord = word;
+        _wordBuffer.Clear();
+
+        // No delimiter: only the typed characters are replaced.
+        var payload = new LayoutCorrection(word, suggestion, string.Empty);
+        ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
     }
 
     // Expand the moment the typed text forms a complete trigger — no space needed. The predicate is
     // an in-memory lookup, and triggers that prefix a longer trigger are excluded from it (those
     // still expand on a space/tab delimiter instead).
-    private void TryExpandCompletedTrigger()
+    private bool TryExpandCompletedTrigger()
     {
         if (!AutoExpandEnabled || _wordBuffer.Length < 2)
         {
-            return;
+            return false;
         }
 
         var matcher = IsCompleteTrigger;
         var handler = SnippetWordCompleted;
         if (matcher is null || handler is null)
         {
-            return;
+            return false;
         }
 
         var word = _wordBuffer.ToString();
         if (!matcher(word))
         {
-            return;
+            return false;
         }
 
         _wordBuffer.Clear();
@@ -260,6 +302,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         // Empty delimiter: only the trigger itself is deleted and replaced.
         var payload = new WordBoundary(word, string.Empty);
         ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
+        return true;
     }
 
     // Raise the auto-expand probe for the finished word (the coordinator decides if it's a trigger).
@@ -318,11 +361,25 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
 
         _lastSuggestedWord = word;
-        var handler = autoApply ? LayoutAutoCorrectRequested : LayoutSuggestionRaised;
-        if (handler is not null)
+
+        if (autoApply)
+        {
+            var correct = LayoutAutoCorrectRequested;
+            if (correct is not null)
+            {
+                // The space that closed the word is deleted with it and re-inserted after the fix.
+                var payload = new LayoutCorrection(word, suggestion, " ");
+                ThreadPool.QueueUserWorkItem(_ => correct.Invoke(this, payload));
+            }
+
+            return;
+        }
+
+        var suggest = LayoutSuggestionRaised;
+        if (suggest is not null)
         {
             var payload = new LayoutSuggestion(word, suggestion);
-            ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
+            ThreadPool.QueueUserWorkItem(_ => suggest.Invoke(this, payload));
         }
     }
 

@@ -60,8 +60,8 @@ internal static class Strings
                 "แสดงคำแนะนำใน tray เมื่อคำที่พิมพ์ดูเหมือนพิมพ์ผิดเลย์เอาต์ ไม่แทนที่ให้เอง— กดคีย์ลัดแปลงภาษาเพื่อแก้"),
             ["Settings_AutoCorrectAuto"] = ("Fix automatically (replace as I type)", "แก้ให้อัตโนมัติ (แทนที่ขณะพิมพ์)"),
             ["Settings_AutoCorrectAutoHint"] = (
-                "When a wrong-layout word is finished with a space, replace it in place instead of only hinting. Uses a stricter rule so English words like don't / it's are left alone.",
-                "เมื่อพิมพ์คำผิดเลย์เอาต์แล้วเคาะ space จะแทนที่ให้ทันทีแทนการแค่แจ้งเตือน ใช้เกณฑ์เข้มขึ้นเพื่อไม่แตะคำอังกฤษอย่าง don't / it's"),
+                "Fixes wrong-layout Thai the moment it's recognised — no space needed — and switches your keyboard to Thai so the rest of the word types correctly. Uses a stricter rule so English words like don't / it's are left alone.",
+                "แก้ให้ทันทีที่รู้ว่าพิมพ์ผิดเลย์เอาต์ ไม่ต้องเคาะ space และสลับคีย์บอร์ดเป็นไทยให้ด้วย ตัวที่พิมพ์ต่อจะเป็นไทยเลย · ใช้เกณฑ์เข้มขึ้นเพื่อไม่แตะคำอังกฤษอย่าง don't / it's"),
             ["Settings_Hotkeys"] = ("Hotkeys", "คีย์ลัด"),
             ["Settings_ConvertLayout"] = ("Convert layout", "แปลงภาษา"),
             ["Settings_ExpandSnippet"] = ("Expand snippet", "ขยาย snippet"),

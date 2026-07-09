@@ -190,6 +190,36 @@ internal static class NativeMethods
     [DllImport("user32.dll", SetLastError = true)]
     public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
+    public const uint WM_INPUTLANGCHANGEREQUEST = 0x0050;
+
+    [DllImport("user32.dll")]
+    public static extern uint GetKeyboardLayoutList(int nBuff, [Out] IntPtr[]? lpList);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    /// <summary>The installed Thai keyboard layout, or <see cref="IntPtr.Zero"/> if none.</summary>
+    public static IntPtr FindThaiLayout()
+    {
+        var count = GetKeyboardLayoutList(0, null);
+        if (count == 0)
+        {
+            return IntPtr.Zero;
+        }
+
+        var list = new IntPtr[count];
+        GetKeyboardLayoutList((int)count, list);
+        foreach (var hkl in list)
+        {
+            if ((hkl.ToInt64() & 0x3FF) == LANG_THAI)
+            {
+                return hkl;
+            }
+        }
+
+        return IntPtr.Zero;
+    }
+
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);

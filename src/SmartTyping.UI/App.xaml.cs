@@ -106,6 +106,10 @@ public partial class App : System.Windows.Application
             hook.SuggestionsEnabled = settings.IsAutoCorrectSuggestEnabledAsync().GetAwaiter().GetResult();
             hook.AutoApplySuggestions = settings.IsAutoCorrectAutoApplyEnabledAsync().GetAwaiter().GetResult();
             hook.AutoExpandEnabled = settings.IsAutoExpandEnabledAsync().GetAwaiter().GetResult();
+
+            // Correcting mid-word only makes sense if we can then switch the user to Thai; otherwise
+            // the rest of the word would keep coming out latin. Fall back to the space-boundary fix.
+            hook.ImmediateLayoutCorrect = _services.GetRequiredService<IKeyboardLayoutSwitcher>().IsThaiAvailable;
         }
         catch (Exception ex)
         {
@@ -289,7 +293,7 @@ public partial class App : System.Windows.Application
             loc.Format("Tray_SuggestionBody", suggestion.Original, suggestion.Suggestion)));
     }
 
-    private async void OnLayoutAutoCorrectRequested(object? sender, Application.Language.LayoutSuggestion suggestion)
+    private async void OnLayoutAutoCorrectRequested(object? sender, Application.Language.LayoutCorrection correction)
     {
         // Drop overlapping requests so two in-flight corrections can't interleave their input.
         if (Interlocked.Exchange(ref _autoCorrectBusy, 1) == 1)
@@ -299,15 +303,24 @@ public partial class App : System.Windows.Application
 
         try
         {
-            // Delete the wrong-layout word plus the space that closed it, and type the fix + a space.
+            // Delete the wrong-layout text (plus the delimiter that closed it, if any) and type the fix.
             var replacer = _services!.GetRequiredService<IInlineReplacer>();
-            var ok = await replacer.ReplaceAsync(suggestion.Original.Length + 1, suggestion.Suggestion + " ");
-            if (ok)
+            var ok = await replacer.ReplaceAsync(
+                correction.Original.Length + correction.Boundary.Length,
+                correction.Suggestion + correction.Boundary);
+
+            if (!ok)
             {
-                var loc = Localization.LocalizationManager.Instance;
-                Dispatcher.Invoke(() => _tray?.ShowBalloon(loc["Tray_AutoFixed"],
-                    loc.Format("Tray_AutoFixedBody", suggestion.Original, suggestion.Suggestion)));
+                return;
             }
+
+            // The user meant to type Thai, so switch the input language — otherwise the rest of the
+            // word keeps coming out as latin and they'd have to fix it again.
+            _services.GetRequiredService<IKeyboardLayoutSwitcher>().SwitchForegroundToThai();
+
+            var loc = Localization.LocalizationManager.Instance;
+            Dispatcher.Invoke(() => _tray?.ShowBalloon(loc["Tray_AutoFixed"],
+                loc.Format("Tray_AutoFixedBody", correction.Original, correction.Suggestion)));
         }
         catch (Exception ex)
         {

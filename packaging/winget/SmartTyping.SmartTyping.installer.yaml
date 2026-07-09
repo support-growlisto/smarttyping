@@ -5,13 +5,13 @@
 #   InstallerSha256 – uppercase SHA-256 of that exe, e.g.:
 #                       (Get-FileHash .\SmartTyping.exe -Algorithm SHA256).Hash
 PackageIdentifier: SmartTyping.SmartTyping
-PackageVersion: 0.1.2
+PackageVersion: 0.1.3
 InstallerType: portable
 Commands:
   - smarttyping
 Installers:
   - Architecture: x64
-    InstallerUrl: https://github.com/support-growlisto/smarttyping/releases/download/v0.1.2/SmartTyping-0.1.2-win-x64.exe
-    InstallerSha256: CE1B5D242E35F816C809A1C5804B847C6981000DCD4E618DCA6EDCB54B5859AF
+    InstallerUrl: https://github.com/support-growlisto/smarttyping/releases/download/v0.1.3/SmartTyping-0.1.3-win-x64.exe
+    InstallerSha256: 41F1D9345319E4455BF6DF9D16F5D6851B31C4B2D8BA203F2B6F4F60A552C12E
 ManifestType: installer
 ManifestVersion: 1.6.0

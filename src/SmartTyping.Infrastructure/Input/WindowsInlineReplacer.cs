@@ -37,18 +37,15 @@ public sealed class WindowsInlineReplacer : IInlineReplacer
         {
             // The keystroke that triggered this replacement is still in flight: the hook raises its
             // event before returning CallNextHookEx, so the character has not reached the focused
-            // window yet. Backspacing immediately would delete the wrong characters. Let it land.
-            await Task.Delay(60);
-
-            KeyboardSender.TapKey(NativeMethods.VK_BACK, charsToDelete);
-            await Task.Delay(15);
-            KeyboardSender.SendUnicode(replacement);
+            // window yet. Backspacing immediately would delete the wrong characters. Let it land —
+            // but keep this short, because the user is still typing.
+            await Task.Delay(35);
 
             // Walk the caret back to the {cursor} marker. A '\n' costs two caret positions because the
-            // Enter we sent inserts a CRLF; '\r' itself was never typed.
+            // Enter we send inserts a CRLF; '\r' itself is never typed.
+            var leftTaps = 0;
             if (cursorOffset is int offset && offset >= 0 && offset < replacement.Length)
             {
-                var back = 0;
                 for (var i = offset; i < replacement.Length; i++)
                 {
                     if (replacement[i] == '\r')
@@ -56,13 +53,12 @@ public sealed class WindowsInlineReplacer : IInlineReplacer
                         continue;
                     }
 
-                    back += replacement[i] == '\n' ? 2 : 1;
+                    leftTaps += replacement[i] == '\n' ? 2 : 1;
                 }
-
-                await Task.Delay(15);
-                KeyboardSender.TapKey(NativeMethods.VK_LEFT, back);
             }
 
+            // One atomic SendInput: the user's next keystroke cannot land inside our edit.
+            KeyboardSender.ReplaceInline(charsToDelete, replacement, leftTaps);
             return true;
         }
         catch (Exception ex)

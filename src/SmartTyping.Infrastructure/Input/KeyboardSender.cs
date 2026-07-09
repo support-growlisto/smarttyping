@@ -100,6 +100,55 @@ internal static class KeyboardSender
         }
     };
 
+    /// <summary>
+    /// Performs a whole inline replacement — backspaces, the replacement text, and any caret-restoring
+    /// Left taps — in a <b>single</b> <c>SendInput</c> call. Doing it atomically matters: the user keeps
+    /// typing while we replace, and any gap between calls lets their next keystroke interleave into the
+    /// middle of the edit (which corrupts the text at normal typing speeds).
+    /// </summary>
+    public static void ReplaceInline(int backspaces, string text, int leftTaps)
+    {
+        var events = new List<NativeMethods.INPUT>((backspaces + text.Length + leftTaps) * 2);
+
+        for (var i = 0; i < backspaces; i++)
+        {
+            events.Add(KeyDown(NativeMethods.VK_BACK));
+            events.Add(KeyUp(NativeMethods.VK_BACK));
+        }
+
+        foreach (var ch in text)
+        {
+            if (ch == '\r')
+            {
+                continue; // the '\n' below emits the line break
+            }
+
+            if (ch == '\n')
+            {
+                events.Add(KeyDown(NativeMethods.VK_RETURN));
+                events.Add(KeyUp(NativeMethods.VK_RETURN));
+                continue;
+            }
+
+            events.Add(UnicodeEvent(ch, isUp: false));
+            events.Add(UnicodeEvent(ch, isUp: true));
+        }
+
+        for (var i = 0; i < leftTaps; i++)
+        {
+            events.Add(KeyDown(NativeMethods.VK_LEFT));
+            events.Add(KeyUp(NativeMethods.VK_LEFT));
+        }
+
+        if (events.Count == 0)
+        {
+            return;
+        }
+
+        var batch = events.ToArray();
+        NativeMethods.SendInput((uint)batch.Length, batch, Marshal.SizeOf<NativeMethods.INPUT>());
+    }
+
     /// <summary>Taps a virtual-key <paramref name="count"/> times (e.g. VK_LEFT to move the caret back).</summary>
     public static void TapKey(int vk, int count)
     {

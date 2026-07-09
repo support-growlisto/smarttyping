@@ -32,7 +32,7 @@ public interface IKeyboardHook : IDisposable
     /// Raised (instead of <see cref="LayoutSuggestionRaised"/>) when automatic correction is enabled
     /// and a wrong-layout word is finished with a space. The handler replaces it in place.
     /// </summary>
-    event EventHandler<Language.LayoutSuggestion>? LayoutAutoCorrectRequested;
+    event EventHandler<Language.LayoutCorrection>? LayoutAutoCorrectRequested;
 
     /// <summary>
     /// Raised when auto-expand is enabled and the user finishes a word with a delimiter. The handler
@@ -59,6 +59,13 @@ public interface IKeyboardHook : IDisposable
     /// corrected automatically on the next space instead of only being suggested.
     /// </summary>
     bool AutoApplySuggestions { get; set; }
+
+    /// <summary>
+    /// When true, an automatic correction fires as soon as the typed text is recognised as
+    /// wrong-layout Thai — no space required. The handler also switches the input language to Thai so
+    /// the rest of the word types correctly. Only enable when a Thai layout is installed.
+    /// </summary>
+    bool ImmediateLayoutCorrect { get; set; }
 
     /// <summary>Replaces the hotkey bindings the hook matches against (applied live).</summary>
     void UpdateBindings(IReadOnlyDictionary<Domain.Enums.HotkeyAction, Domain.ValueObjects.Hotkey> bindings);
