@@ -79,6 +79,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+## [0.2.0]
+
+### Layout correction is now decided by dictionary, not by character shapes
+The hand-written heuristics are gone. A word is converted only when it is a real word in the target
+language **and not** a real word in the language it was typed in — the same principle RightLang uses.
+Each direction carries its own veto, and that is what makes it safe:
+
+- **Latin layout** → convert only if the Thai reading is a Thai word *and* the latin isn't English.
+  `soy'lnv` → `หนังสือ`; `world` and `don't` are untouched.
+- **Thai layout** → convert back only if the latin is an English word *and* the Thai on screen isn't a
+  Thai word. `hello` is restored; `ทดสอบ` is never touched.
+
+This fixes two classes of bug the heuristic could not: the apostrophe is `ง`, so every Thai word
+containing it (`หนังสือ`, `ของ`, `อย่าง`) used to be ignored; and English whose Thai rendering happened
+to look structurally valid (`world` → `ไนพสก`) used to be mis-converted.
+
+Both word lists are **public domain** and are not taken from any other keyboard tool:
+Thai from [PyThaiNLP](https://github.com/PyThaiNLP/pythainlp) (CC0-1.0, 60,537 words) and English from
+[dwyl/english-words](https://github.com/dwyl/english-words) (Unlicense, 315,100 words). They are
+gzipped into the assembly (1.2 MB) and loaded off-thread; until they are ready the corrector does
+nothing. See `assets/dict/README.md`.
+
+### Fixed: the Thai layout silently drops keystrokes
+Windows' Thai layout rejects impossible sequences, so typing `hello` on it inserts only `สสน` — the
+leading tone mark and sara-am never reach the document. The corrector used to assume one character per
+keystroke and would have backspaced over five characters to fix three, destroying text before the
+word. `ThaiInput.Filter` now models that validation, so we delete exactly what is on screen.
+
 ### Notifications
 - **Tray notifications can be switched off** — Settings → "Show notifications". Gated inside `TrayIconService` rather than at each call site, so no feature can pop a balloon the user disabled. The features themselves keep working silently.
 

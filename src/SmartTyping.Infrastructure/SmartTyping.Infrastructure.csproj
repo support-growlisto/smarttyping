@@ -27,4 +27,14 @@
     <InternalsVisibleTo Include="SmartTyping.IntegrationTests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Public-domain word lists used by the layout corrector. See assets/dict/README.md. -->
+    <EmbeddedResource Include="..\..\assets\dict\words_th.txt.gz">
+      <LogicalName>SmartTyping.Infrastructure.words_th.txt.gz</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\dict\words_en.txt.gz">
+      <LogicalName>SmartTyping.Infrastructure.words_en.txt.gz</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

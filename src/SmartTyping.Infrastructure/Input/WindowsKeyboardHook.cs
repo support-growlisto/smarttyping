@@ -22,6 +22,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 {
     private readonly ILogger<WindowsKeyboardHook> _logger;
     private readonly IKeyboardLayoutConverter _converter;
+    private readonly LayoutDecider _decider;
 
     // Keep the delegates alive for the lifetime of the hooks (prevents GC of the callbacks).
     private readonly NativeMethods.LowLevelKeyboardProc _proc;
@@ -38,10 +39,11 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     private string _lastSuggestedWord = string.Empty;
     private IntPtr _lastForeground = IntPtr.Zero;
 
-    public WindowsKeyboardHook(ILogger<WindowsKeyboardHook> logger, IKeyboardLayoutConverter converter)
+    public WindowsKeyboardHook(ILogger<WindowsKeyboardHook> logger, IKeyboardLayoutConverter converter, LayoutDecider decider)
     {
         _logger = logger;
         _converter = converter;
+        _decider = decider;
         _proc = HookCallback;
         _mouseProc = MouseCallback;
     }
@@ -271,41 +273,11 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
     /// <summary>
     /// Decides whether <paramref name="word"/> (the latin characters the physical keys represent) needs
-    /// correcting, in either direction, and builds the replacement. Returns null when nothing to do.
+    /// correcting, in either direction. Both directions are settled by dictionary lookup — see
+    /// <see cref="LayoutDecider"/>. Returns null when nothing to do.
     /// </summary>
-    private LayoutCorrection? BuildCorrection(string word, string boundary)
-    {
-        if (NativeMethods.ForegroundLayoutIsThai())
-        {
-            // Thai layout is active, so what's on screen is the Thai these keys produce. If that Thai is
-            // structurally impossible, the user meant English — put the latin characters back.
-            var onScreen = _converter.Convert(word, Domain.Enums.ConversionDirection.EnglishToThai);
-            if (onScreen.Length != word.Length ||
-                !WrongLayoutDetector.LooksLikeWrongLayoutEnglish(onScreen))
-            {
-                return null;
-            }
-
-            return new LayoutCorrection(onScreen, word, boundary, ToThai: false);
-        }
-
-        // A latin layout is active: the classic "forgot to switch to Thai" case. The apostrophe is the
-        // Thai 'ง', so it counts as a signal — unless the word is an English contraction (or still
-        // growing into one), in which case leave it alone.
-        if (!WrongLayoutDetector.LooksLikeWrongLayoutThai(word, strict: true) ||
-            WrongLayoutDetector.CouldBeEnglishContraction(word))
-        {
-            return null;
-        }
-
-        var thai = _converter.Convert(word, Domain.Enums.ConversionDirection.EnglishToThai);
-        if (string.Equals(thai, word, StringComparison.Ordinal))
-        {
-            return null;
-        }
-
-        return new LayoutCorrection(word, thai, boundary, ToThai: true);
-    }
+    private LayoutCorrection? BuildCorrection(string word, string boundary) =>
+        _decider.Decide(word, NativeMethods.ForegroundLayoutIsThai(), boundary);
 
     // Expand the moment the typed text forms a complete trigger — no space needed. The predicate is
     // an in-memory lookup, and triggers that prefix a longer trigger are excluded from it (those
@@ -394,15 +366,9 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             return;
         }
 
-        // Hint-only mode still covers the classic latin-typed-Thai case.
-        if (NativeMethods.ForegroundLayoutIsThai() ||
-            !WrongLayoutDetector.LooksLikeWrongLayoutThai(word))
-        {
-            return;
-        }
-
-        var suggestion = _converter.Convert(word, Domain.Enums.ConversionDirection.EnglishToThai);
-        if (string.Equals(suggestion, word, StringComparison.Ordinal))
+        // Hint-only mode: same dictionary decision, but we merely suggest instead of replacing.
+        var hint = BuildCorrection(word, string.Empty);
+        if (hint is null)
         {
             return;
         }
@@ -411,7 +377,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         var suggest = LayoutSuggestionRaised;
         if (suggest is not null)
         {
-            var payload = new LayoutSuggestion(word, suggestion);
+            var payload = new LayoutSuggestion(hint.Original, hint.Suggestion);
             ThreadPool.QueueUserWorkItem(_ => suggest.Invoke(this, payload));
         }
     }
