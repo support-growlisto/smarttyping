@@ -44,11 +44,32 @@ public sealed class WrongLayoutDetectorTests
     }
 
     [Theory]
-    [InlineData("don't", false)]   // apostrophe-only: NOT auto-corrected (English contraction)
-    [InlineData("it's", false)]
-    [InlineData("l;ylfu", true)]   // ';' still triggers strict mode
-    [InlineData("[b'k", true)]     // has '[' so still flagged even though it also has '
-    public void StrictModeIgnoresApostrophe(string word, bool expected)
+    // Real contractions (and words still growing into one) must never be auto-corrected.
+    [InlineData("don't", true)]
+    [InlineData("don'", true)]     // still ambiguous — wait for the next keystroke
+    [InlineData("it's", true)]
+    [InlineData("we're", true)]
+    [InlineData("we'l", true)]     // prefix of "we'll"
+    [InlineData("I'm", true)]
+    // Thai typed on a latin layout: the apostrophe is 'ง'.
+    [InlineData("soy'lnv", false)] // หนังสือ — "lnv" can't finish any contraction
+    [InlineData("soy'l", true)]    // still ambiguous: "l" could be growing into "'ll"
+    [InlineData("'lnv", false)]    // apostrophe first: nothing English before it
+    public void CouldBeEnglishContraction(string word, bool expected)
+    {
+        Assert.Equal(expected, WrongLayoutDetector.CouldBeEnglishContraction(word));
+    }
+
+    [Theory]
+    // The apostrophe is 'ง' on Kedmanee, so it *is* a wrong-layout signal. Contractions are excluded
+    // separately by CouldBeEnglishContraction, not by weakening this detector.
+    [InlineData("soy'lnv", true)]  // หนังสือ
+    [InlineData("don't", true)]
+    [InlineData("it's", true)]
+    [InlineData("l;ylfu", true)]
+    [InlineData("[b'k", true)]
+    [InlineData("hello", false)]
+    public void StrictModeAcceptsApostrophe(string word, bool expected)
     {
         Assert.Equal(expected, WrongLayoutDetector.LooksLikeWrongLayoutThai(word, strict: true));
     }

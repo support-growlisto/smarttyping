@@ -12,10 +12,13 @@ public static class WrongLayoutDetector
     // run of letters is a strong signal of wrong-layout Thai (real English words don't contain ; ' [ ]).
     private static readonly char[] ThaiConsonantPunctuation = { ';', '\'', '[', ']', '\\' };
 
-    // Stricter set for automatic replacement: drops the apostrophe, because it legitimately appears
-    // in English contractions (don't, it's, I'm). The others essentially never occur mid-word, so
-    // they stay safe to auto-fix. Used only when the user opts into automatic correction.
-    private static readonly char[] ThaiConsonantPunctuationStrict = { ';', '[', ']', '\\' };
+    // The apostrophe is 'ง' on Kedmanee — one of the most common Thai consonants (หนังสือ, ของ, อย่าง),
+    // so dropping it from the automatic path would miss most Thai words. It is kept, and English
+    // contractions are excluded precisely instead — see CouldBeEnglishContraction.
+    private static readonly char[] ThaiConsonantPunctuationStrict = { ';', '\'', '[', ']', '\\' };
+
+    // What follows the apostrophe in an English contraction: don't, it's, we're, we'll, I've, I'm, he'd.
+    private static readonly string[] ContractionSuffixes = { "t", "s", "re", "ll", "ve", "m", "d" };
 
     /// <summary>
     /// Returns true if <paramref name="latinWord"/> (as physically typed on a QWERTY layout) looks
@@ -46,6 +49,46 @@ public static class WrongLayoutDetector
         }
 
         return hasLetter && hasThaiConsonantPunctuation;
+    }
+
+    /// <summary>
+    /// True when <paramref name="latinWord"/> is (or is still growing into) an English contraction such
+    /// as <c>don't</c>, <c>it's</c>, <c>we'll</c> — in which case the apostrophe is a real apostrophe,
+    /// not the Thai consonant 'ง', and the word must not be auto-corrected.
+    ///
+    /// <para>Mid-word this also returns true while the suffix is merely a *prefix* of a contraction
+    /// ending (<c>don'</c>, <c>we'l</c>), so we wait for another keystroke before deciding rather than
+    /// corrupting a word the user is halfway through typing.</para>
+    /// </summary>
+    public static bool CouldBeEnglishContraction(string latinWord)
+    {
+        var apostrophe = latinWord.LastIndexOf('\'');
+        if (apostrophe < 0)
+        {
+            return false;
+        }
+
+        // Everything before the apostrophe must look like an English word for this to be a contraction.
+        for (var i = 0; i < apostrophe; i++)
+        {
+            var c = latinWord[i];
+            if (c is not (>= 'a' and <= 'z' or >= 'A' and <= 'Z'))
+            {
+                return false;
+            }
+        }
+
+        var suffix = latinWord[(apostrophe + 1)..];
+        foreach (var contraction in ContractionSuffixes)
+        {
+            // Exact ("don't") or still ambiguous ("don'", "we'l").
+            if (contraction.StartsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // Thai characters that can never begin a syllable: tone marks, dependent (attached) vowels, and

@@ -289,8 +289,11 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             return new LayoutCorrection(onScreen, word, boundary, ToThai: false);
         }
 
-        // A latin layout is active: the classic "forgot to switch to Thai" case.
-        if (!WrongLayoutDetector.LooksLikeWrongLayoutThai(word, strict: true))
+        // A latin layout is active: the classic "forgot to switch to Thai" case. The apostrophe is the
+        // Thai 'ง', so it counts as a signal — unless the word is an English contraction (or still
+        // growing into one), in which case leave it alone.
+        if (!WrongLayoutDetector.LooksLikeWrongLayoutThai(word, strict: true) ||
+            WrongLayoutDetector.CouldBeEnglishContraction(word))
         {
             return null;
         }
