@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using SmartTyping.UI.Services;
@@ -8,6 +9,11 @@ namespace SmartTyping.UI.Views;
 public partial class QuickPickerWindow : Window
 {
     private readonly QuickPickerViewModel _viewModel;
+
+    // WPF throws if Close() is called while the window is already closing. Accepting a snippet sets
+    // DialogResult (which begins closing) and immediately deactivates the window, so the Deactivated
+    // handler would re-enter Close() and crash. This latch makes dismissal idempotent.
+    private bool _closing;
 
     public QuickPickerWindow(QuickPickerViewModel viewModel)
     {
@@ -23,8 +29,25 @@ public partial class QuickPickerWindow : Window
         };
 
         // Dismiss if the user clicks away.
-        Deactivated += (_, _) => Close();
+        Deactivated += (_, _) => DismissOnce();
         PreviewKeyDown += OnPreviewKeyDown;
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        _closing = true;
+        base.OnClosing(e);
+    }
+
+    private void DismissOnce()
+    {
+        if (_closing)
+        {
+            return;
+        }
+
+        _closing = true;
+        Close();
     }
 
     /// <summary>The trigger the user chose, or null if the picker was dismissed.</summary>
@@ -49,7 +72,7 @@ public partial class QuickPickerWindow : Window
                 e.Handled = true;
                 break;
             case Key.Escape:
-                Close();
+                DismissOnce();
                 e.Handled = true;
                 break;
         }
@@ -65,6 +88,7 @@ public partial class QuickPickerWindow : Window
         }
 
         SelectedTrigger = _viewModel.Selected.Trigger;
+        _closing = true; // setting DialogResult starts the close; keep Deactivated from re-entering
         DialogResult = true;
     }
 }
