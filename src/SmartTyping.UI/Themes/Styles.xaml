@@ -145,6 +145,17 @@
         </Setter>
     </Style>
 
+    <!-- A templated ComboBox surfaces the selected item through SelectionBoxItemTemplate, which WPF
+         only fills in from ItemTemplate — not from DisplayMemberPath. Use these instead of
+         DisplayMemberPath on any ComboBox, or the selection box shows the item's ToString(). -->
+    <DataTemplate x:Key="DisplayNameItemTemplate">
+        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
+    </DataTemplate>
+
+    <DataTemplate x:Key="NameItemTemplate">
+        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+    </DataTemplate>
+
     <!-- The stock ComboBox template paints its own chrome from system colours, so in dark mode it
          stays white with unreadable text. Template it fully against the theme brushes. -->
     <Style TargetType="{x:Type ComboBox}">

@@ -28,7 +28,7 @@
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
             <TextBlock Text="{Binding [Edit_Category], Source={x:Static loc:LocalizationManager.Instance}}" Width="70" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
-                      DisplayMemberPath="Name" Width="240" />
+                      ItemTemplate="{StaticResource NameItemTemplate}" Width="240" />
         </StackPanel>
 
         <CheckBox Grid.Row="2" Margin="70,0,0,8" IsChecked="{Binding IsEnabled}"

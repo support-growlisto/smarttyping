@@ -14,6 +14,9 @@ public sealed class SettingsServiceTests
 
         Assert.True(await service.IsSnippetExpansionEnabledAsync());
         Assert.True(await service.IsLanguageCorrectionEnabledAsync());
+
+        // Notifications are on until the user turns them off.
+        Assert.True(await service.IsNotificationsEnabledAsync());
     }
 
     [Theory]

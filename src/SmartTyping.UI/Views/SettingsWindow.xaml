@@ -55,14 +55,14 @@
             <TextBlock Text="{Binding [Settings_Language], Source={x:Static loc:LocalizationManager.Instance}}"
                        Width="120" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}"
-                      DisplayMemberPath="DisplayName" Width="140" />
+                      ItemTemplate="{StaticResource DisplayNameItemTemplate}" Width="140" />
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
             <TextBlock Text="{Binding [Settings_Theme], Source={x:Static loc:LocalizationManager.Instance}}"
                        Width="120" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
-                      DisplayMemberPath="DisplayName" Width="140" />
+                      ItemTemplate="{StaticResource DisplayNameItemTemplate}" Width="140" />
         </StackPanel>
 
         <CheckBox Content="{Binding [Settings_StartWithWindows], Source={x:Static loc:LocalizationManager.Instance}}"
