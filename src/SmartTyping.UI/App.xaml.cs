@@ -310,22 +310,26 @@ public partial class App : System.Windows.Application
 
     private async void OnLayoutAutoCorrectRequested(object? sender, Application.Language.LayoutCorrection correction)
     {
+        var replacer = _services!.GetRequiredService<IInlineReplacer>();
+
         // Drop overlapping requests so two in-flight corrections can't interleave their input.
         if (Interlocked.Exchange(ref _autoCorrectBusy, 1) == 1)
         {
+            await GiveBackAsync(replacer, correction);
             return;
         }
 
         try
         {
-            // Delete the wrong-layout text (plus the delimiter that closed it, if any) and type the fix.
-            var replacer = _services!.GetRequiredService<IInlineReplacer>();
+            // Delete only what actually reached the document — the hook counted it, and it swallowed
+            // the keystroke that triggered us. Type the fix, then the delimiter that closed the word.
             var ok = await replacer.ReplaceAsync(
-                correction.Original.Length + correction.Boundary.Length,
+                correction.CharsToDelete,
                 correction.Suggestion + correction.Boundary);
 
             if (!ok)
             {
+                await GiveBackAsync(replacer, correction);
                 return;
             }
 
@@ -343,10 +347,21 @@ public partial class App : System.Windows.Application
         catch (Exception ex)
         {
             _logger?.LogWarning(ex, "Automatic layout correction failed.");
+            await GiveBackAsync(replacer, correction);
         }
         finally
         {
             Interlocked.Exchange(ref _autoCorrectBusy, 0);
+        }
+    }
+
+    // The hook swallowed the keystroke that triggered the correction, so that our backspaces could not
+    // race it into the document. If the correction doesn't happen, that keystroke is ours to return.
+    private static async Task GiveBackAsync(IInlineReplacer replacer, Application.Language.LayoutCorrection correction)
+    {
+        if (correction.SwallowedText.Length > 0)
+        {
+            await replacer.TypeAsync(correction.SwallowedText);
         }
     }
 

@@ -15,19 +15,20 @@ public sealed class TriggerIndex
 {
     public static readonly TriggerIndex Empty = new(Array.Empty<string>());
 
+    private readonly HashSet<string> _all;
     private readonly HashSet<string> _expandOnCompletion;
 
     public TriggerIndex(IEnumerable<string> triggers)
     {
-        var all = triggers
+        _all = triggers
             .Where(t => !string.IsNullOrWhiteSpace(t))
             .Select(t => t.Trim())
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         _expandOnCompletion = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var trigger in all)
+        foreach (var trigger in _all)
         {
-            var isPrefixOfAnother = all.Any(other =>
+            var isPrefixOfAnother = _all.Any(other =>
                 other.Length > trigger.Length &&
                 other.StartsWith(trigger, StringComparison.OrdinalIgnoreCase));
 
@@ -44,4 +45,12 @@ public sealed class TriggerIndex
     /// </summary>
     public bool IsCompleteTrigger(string typed) =>
         !string.IsNullOrEmpty(typed) && _expandOnCompletion.Contains(typed);
+
+    /// <summary>
+    /// True when <paramref name="typed"/> is an enabled trigger at all — including one that is a prefix
+    /// of a longer trigger and therefore waits for a delimiter. The hook asks this before it swallows
+    /// the delimiter, so it only takes a keystroke that an expansion is actually going to replace.
+    /// </summary>
+    public bool IsKnownTrigger(string typed) =>
+        !string.IsNullOrEmpty(typed) && _all.Contains(typed);
 }

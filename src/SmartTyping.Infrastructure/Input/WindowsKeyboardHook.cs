@@ -96,6 +96,8 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
     public Func<string, bool>? IsCompleteTrigger { get; set; }
 
+    public Func<string, bool>? IsKnownTrigger { get; set; }
+
     public AppBlocklist Blocklist { get; set; } = new(AppBlocklist.Defaults);
 
     public void UpdateBindings(IReadOnlyDictionary<HotkeyAction, Hotkey> bindings) => _bindings = bindings;
@@ -245,7 +247,16 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                         _lastForeground = foreground;
                     }
 
-                    UpdateWordBuffer(vk, (mods & HotkeyModifiers.Shift) != 0);
+                    if (UpdateWordBuffer(vk, (mods & HotkeyModifiers.Shift) != 0))
+                    {
+                        // We have taken this keystroke. Whatever it would have typed is carried in the
+                        // payload we just raised, and the handler types it as part of the replacement —
+                        // or types it back verbatim if it decides not to replace after all. Letting the
+                        // key through as well would race that replacement: the character arrives at the
+                        // target window after CallNextHookEx returns, which is *after* we have already
+                        // sent our backspaces. That race is what the old fixed delay tried to paper over.
+                        return 1;
+                    }
                 }
             }
         }
@@ -266,7 +277,12 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         }
     }
 
-    private void UpdateWordBuffer(int vk, bool shift)
+    /// <summary>
+    /// Feeds one keystroke into the as-you-type word buffer. Returns true when this keystroke must be
+    /// swallowed because a replacement has been raised for it — the handler will type it back as part
+    /// of (or instead of) the replacement.
+    /// </summary>
+    private bool UpdateWordBuffer(int vk, bool shift)
     {
         switch (vk)
         {
@@ -274,28 +290,31 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             case NativeMethods.VK_RETURN:
             case NativeMethods.VK_TAB:
                 var completed = _wordAbandoned ? string.Empty : _wordBuffer.ToString();
-                RaiseSnippetWordCompleted(completed, vk);
-                EvaluateWord(completed, atSpace: vk == NativeMethods.VK_SPACE);
+
+                // At most one of the two may fire: both would replace the same text. An expansion wins,
+                // because the user typed a trigger deliberately.
+                var swallow = RaiseSnippetWordCompleted(completed, vk) ||
+                              EvaluateWord(completed, atSpace: vk == NativeMethods.VK_SPACE);
                 ResetWord();
-                return;
+                return swallow;
             case NativeMethods.VK_BACK:
                 if (!_wordAbandoned && _wordBuffer.Length > 0)
                 {
                     _wordBuffer.Length--;
                 }
-                return;
+                return false;
         }
 
         var c = VkToChar(vk, shift);
         if (c == '\0')
         {
             ResetWord(); // navigation / other keys break the current word
-            return;
+            return false;
         }
 
         if (_wordAbandoned)
         {
-            return; // still inside an over-long run
+            return false; // still inside an over-long run
         }
 
         if (_wordBuffer.Length == MaxTrackedWordLength)
@@ -306,14 +325,11 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             _wordBuffer.Clear();
             _wordAbandoned = true;
             _undoArmed = false;
-            return;
+            return false;
         }
 
         _wordBuffer.Append(c);
-        if (!TryExpandCompletedTrigger())
-        {
-            TryCorrectLayoutMidWord();
-        }
+        return TryExpandCompletedTrigger() || TryCorrectLayoutMidWord();
     }
 
     /// <summary>Forgets the current word — the only safe state once we lose track of the caret.</summary>
@@ -325,44 +341,86 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
     // Correct wrong-layout Thai the moment it is recognisable, without waiting for a space. The
     // handler also switches the input language to Thai, so the remainder of the word types correctly.
-    private void TryCorrectLayoutMidWord()
+    private bool TryCorrectLayoutMidWord()
     {
         if (!SuggestionsEnabled || !AutoApplySuggestions || !ImmediateLayoutCorrect || _wordBuffer.Length < 3)
         {
-            return;
+            return false;
         }
 
         var handler = LayoutAutoCorrectRequested;
         if (handler is null)
         {
-            return;
+            return false;
         }
 
         var word = _wordBuffer.ToString();
         if (word == _lastSuggestedWord)
         {
-            return;
+            return false;
         }
 
         var payload = BuildCorrection(word, string.Empty);
         if (payload is null)
         {
-            return;
+            return false;
         }
 
         _lastSuggestedWord = word;
         _wordBuffer.Clear();
         _undoArmed = true;
         ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
+        return true;
     }
 
     /// <summary>
     /// Decides whether <paramref name="word"/> (the latin characters the physical keys represent) needs
     /// correcting, in either direction. Both directions are settled by dictionary lookup — see
     /// <see cref="LayoutDecider"/>. Returns null when nothing to do.
+    ///
+    /// <para>Also counts what the document is actually holding. The keystroke that triggered us is
+    /// swallowed, so it is not there: mid-word that is the word's last character, at a boundary it is
+    /// the delimiter. And under a Thai layout the keys that reached the document produced Thai, some of
+    /// which Windows refused outright — so the count is the length of the *filtered* Thai, not of the
+    /// latin the user pressed.</para>
     /// </summary>
-    private LayoutCorrection? BuildCorrection(string word, string boundary) =>
-        _decider.Decide(word, NativeMethods.ForegroundLayoutIsThai(), boundary);
+    private LayoutCorrection? BuildCorrection(string word, string boundary)
+    {
+        var thaiLayout = NativeMethods.ForegroundLayoutIsThai();
+        var payload = _decider.Decide(word, thaiLayout, boundary);
+        if (payload is null)
+        {
+            return null;
+        }
+
+        var atBoundary = boundary.Length > 0;
+        var delivered = atBoundary ? word : word[..^1];
+
+        if (!thaiLayout)
+        {
+            return payload with
+            {
+                CharsToDelete = delivered.Length,
+                SwallowedText = atBoundary ? boundary : word[^1..]
+            };
+        }
+
+        // Filter is a left-to-right rejection of impossible sequences, so filtering a prefix of the
+        // word yields a prefix of filtering the whole word. The tail is what the swallowed key would
+        // have put on screen — sometimes nothing, when Windows would have rejected it too.
+        var onScreenFull = OnScreen(word);
+        var onScreenDelivered = atBoundary ? onScreenFull : OnScreen(delivered);
+
+        return payload with
+        {
+            CharsToDelete = onScreenDelivered.Length,
+            SwallowedText = atBoundary ? boundary : onScreenFull[onScreenDelivered.Length..]
+        };
+    }
+
+    /// <summary>What the Thai layout actually leaves on screen for the given physical keys.</summary>
+    private string OnScreen(string typed) =>
+        ThaiInput.Filter(_converter.Convert(typed, ConversionDirection.EnglishToThai));
 
     // Expand the moment the typed text forms a complete trigger — no space needed. The predicate is
     // an in-memory lookup, and triggers that prefix a longer trigger are excluded from it (those
@@ -389,24 +447,28 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
         _wordBuffer.Clear();
 
-        // Empty delimiter: only the trigger itself is deleted and replaced.
-        var payload = new WordBoundary(word, string.Empty);
+        // Empty delimiter: only the trigger itself is deleted and replaced. Its last character was
+        // swallowed and never reached the document, hence Length - 1.
+        var payload = new WordBoundary(word, string.Empty, word.Length - 1, word[^1..]);
         ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
         return true;
     }
 
-    // Raise the auto-expand probe for the finished word (the coordinator decides if it's a trigger).
-    private void RaiseSnippetWordCompleted(string word, int boundaryVk)
+    // Raise the auto-expand probe for a finished word that we already know is a trigger. Returns true
+    // when the delimiter must be swallowed — we only take it once the word is worth expanding, so an
+    // ordinary space is never held hostage by a database lookup that will find nothing.
+    private bool RaiseSnippetWordCompleted(string word, int boundaryVk)
     {
         if (!AutoExpandEnabled || word.Length < 2)
         {
-            return;
+            return false;
         }
 
         var handler = SnippetWordCompleted;
-        if (handler is null)
+        var known = IsKnownTrigger;
+        if (handler is null || known is null)
         {
-            return;
+            return false;
         }
 
         // Only single-character delimiters (space / tab). Enter is skipped because the newline it
@@ -417,20 +479,22 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             NativeMethods.VK_SPACE => " ",
             _ => null
         };
-        if (boundary is null)
+        if (boundary is null || !known(word))
         {
-            return;
+            return false;
         }
 
-        var payload = new WordBoundary(word, boundary);
+        var payload = new WordBoundary(word, boundary, word.Length, boundary);
         ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
+        return true;
     }
 
-    private void EvaluateWord(string word, bool atSpace)
+    // Returns true when the delimiter must be swallowed because an automatic correction was raised.
+    private bool EvaluateWord(string word, bool atSpace)
     {
         if (!SuggestionsEnabled || word.Length < 2 || word == _lastSuggestedWord)
         {
-            return;
+            return false;
         }
 
         // Automatic replacement runs only on a space boundary, so we never disturb a line break.
@@ -439,24 +503,26 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         if (autoApply)
         {
             var correct = LayoutAutoCorrectRequested;
-            // The space that closed the word is deleted with it and re-inserted after the fix.
+            // The space that closed the word is swallowed with it and re-inserted after the fix.
             var payload = correct is null ? null : BuildCorrection(word, " ");
             if (payload is null)
             {
-                return;
+                return false;
             }
 
             _lastSuggestedWord = word;
             _undoArmed = true;
             ThreadPool.QueueUserWorkItem(_ => correct!.Invoke(this, payload));
-            return;
+            return true;
         }
 
-        // Hint-only mode: same dictionary decision, but we merely suggest instead of replacing.
-        var hint = BuildCorrection(word, string.Empty);
+        // Hint-only mode: same dictionary decision, but we merely suggest instead of replacing. Nothing
+        // is typed and no key is swallowed, so we ask the decider directly — none of the counting
+        // BuildCorrection does applies here.
+        var hint = _decider.Decide(word, NativeMethods.ForegroundLayoutIsThai(), string.Empty);
         if (hint is null)
         {
-            return;
+            return false;
         }
 
         _lastSuggestedWord = word;
@@ -466,6 +532,8 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             var payload = new LayoutSuggestion(hint.Original, hint.Suggestion);
             ThreadPool.QueueUserWorkItem(_ => suggest.Invoke(this, payload));
         }
+
+        return false;
     }
 
     // Maps a virtual-key to the character it produces on a US-QWERTY layout (physical key), honouring

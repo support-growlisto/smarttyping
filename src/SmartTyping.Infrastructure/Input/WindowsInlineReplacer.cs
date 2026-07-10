@@ -5,13 +5,17 @@ namespace SmartTyping.Infrastructure.Input;
 
 /// <summary>
 /// <see cref="IInlineReplacer"/> for Windows: backspaces over the just-typed text and types the
-/// replacement as Unicode keystrokes.
+/// replacement as Unicode keystrokes, all in one <c>SendInput</c> call.
 ///
 /// <para>Deliberately does <b>not</b> use the clipboard-based <see cref="ITextInjector"/>. That path
-/// snapshots the clipboard, sets it, sends Ctrl+V, then restores the snapshot ~80 ms later — for an
-/// inline replacement fired straight from the keyboard hook, the target app often reads the clipboard
-/// only after the restore, pasting the *old* contents (i.e. nothing). Typing the characters directly
-/// is deterministic and leaves the user's clipboard untouched.</para>
+/// snapshots the clipboard, sets it, sends Ctrl+V, then restores the snapshot — for a replacement
+/// fired straight from the keyboard hook, the target app often reads the clipboard only after the
+/// restore, pasting the *old* contents. Typing the characters directly is deterministic and leaves the
+/// user's clipboard untouched.</para>
+///
+/// <para>There is also no sleep here waiting for the triggering keystroke to arrive. The hook swallows
+/// that key, so nothing is in flight and there is nothing to wait for: what we send is the only input
+/// the target will see, and it arrives in the order we queued it.</para>
 ///
 /// Best-effort — logs and swallows failures.
 /// </summary>
@@ -23,24 +27,13 @@ public sealed class WindowsInlineReplacer : IInlineReplacer
 
     public Task<bool> ReplaceAsync(int charsToDelete, string replacement, int? cursorOffset = null)
     {
-        if (charsToDelete <= 0 || string.IsNullOrEmpty(replacement))
+        if (charsToDelete < 0 || string.IsNullOrEmpty(replacement))
         {
             return Task.FromResult(false);
         }
 
-        return ReplaceCoreAsync(charsToDelete, replacement, cursorOffset);
-    }
-
-    private async Task<bool> ReplaceCoreAsync(int charsToDelete, string replacement, int? cursorOffset)
-    {
         try
         {
-            // The keystroke that triggered this replacement is still in flight: the hook raises its
-            // event before returning CallNextHookEx, so the character has not reached the focused
-            // window yet. Backspacing immediately would delete the wrong characters. Let it land —
-            // but keep this short, because the user is still typing.
-            await Task.Delay(35);
-
             // Walk the caret back to the {cursor} marker. A '\n' costs two caret positions because the
             // Enter we send inserts a CRLF; '\r' itself is never typed.
             var leftTaps = 0;
@@ -59,12 +52,31 @@ public sealed class WindowsInlineReplacer : IInlineReplacer
 
             // One atomic SendInput: the user's next keystroke cannot land inside our edit.
             KeyboardSender.ReplaceInline(charsToDelete, replacement, leftTaps);
-            return true;
+            return Task.FromResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Inline replacement failed.");
-            return false;
+            return Task.FromResult(false);
+        }
+    }
+
+    public Task<bool> TypeAsync(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return Task.FromResult(false);
+        }
+
+        try
+        {
+            KeyboardSender.ReplaceInline(backspaces: 0, text, leftTaps: 0);
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to type back the swallowed keystroke.");
+            return Task.FromResult(false);
         }
     }
 }

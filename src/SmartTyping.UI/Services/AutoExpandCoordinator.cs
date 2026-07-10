@@ -53,6 +53,7 @@ public sealed class AutoExpandCoordinator : IDisposable
     {
         _hook.SnippetWordCompleted += OnWordCompleted;
         _hook.IsCompleteTrigger = word => _index.IsCompleteTrigger(word);
+        _hook.IsKnownTrigger = word => _index.IsKnownTrigger(word);
         _refreshTimer = new System.Threading.Timer(_ => _ = RefreshIndexAsync(), null, TimeSpan.Zero, RefreshInterval);
     }
 
@@ -60,6 +61,7 @@ public sealed class AutoExpandCoordinator : IDisposable
     {
         _hook.SnippetWordCompleted -= OnWordCompleted;
         _hook.IsCompleteTrigger = null;
+        _hook.IsKnownTrigger = null;
         _refreshTimer?.Dispose();
         _refreshTimer = null;
     }
@@ -83,6 +85,7 @@ public sealed class AutoExpandCoordinator : IDisposable
         // one expansion is still injecting.
         if (Interlocked.Exchange(ref _busy, 1) == 1)
         {
+            await GiveBackAsync(e);
             return;
         }
 
@@ -90,19 +93,23 @@ public sealed class AutoExpandCoordinator : IDisposable
         {
             if (_secureInput.IsFocusedFieldSecure())
             {
+                await GiveBackAsync(e);
                 return;
             }
 
             var result = await _expansion.TryExpandAsync(e.Word);
             if (!result.Matched || result.ExpandedText is null)
             {
+                await GiveBackAsync(e);
                 return;
             }
 
-            // Delete the trigger (plus its delimiter, when one closed the word) and insert the
-            // rendered snippet followed by the same delimiter so the user's spacing is preserved.
+            // Delete the trigger and insert the rendered snippet, followed by the delimiter that closed
+            // the word so the user's spacing is preserved. The hook swallowed that delimiter (and, for
+            // an instant expansion, the trigger's last character), so it counted what actually reached
+            // the document — we must not add anything to CharsToDelete.
             var replacement = result.ExpandedText + e.Boundary;
-            if (await _replacer.ReplaceAsync(e.Word.Length + e.Boundary.Length, replacement, result.CursorOffset))
+            if (await _replacer.ReplaceAsync(e.CharsToDelete, replacement, result.CursorOffset))
             {
                 if (result.SnippetId is int id)
                 {
@@ -111,14 +118,30 @@ public sealed class AutoExpandCoordinator : IDisposable
 
                 Expanded?.Invoke(this, result.ExpandedText);
             }
+            else
+            {
+                await GiveBackAsync(e);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Auto-expand handling failed.");
+            await GiveBackAsync(e);
         }
         finally
         {
             Interlocked.Exchange(ref _busy, 0);
+        }
+    }
+
+    // The hook took the keystroke that completed the trigger so nothing could race our replacement.
+    // If we end up not expanding, that keystroke is ours to return — otherwise the user silently loses
+    // a character.
+    private async Task GiveBackAsync(WordBoundary e)
+    {
+        if (e.SwallowedText.Length > 0)
+        {
+            await _replacer.TypeAsync(e.SwallowedText);
         }
     }
 

@@ -79,6 +79,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+## [0.6.0]
+
+### Changed: the hook now takes the keystroke that triggers a replacement
+
+Both automatic features — layout correction and snippet expansion — replace text by backspacing over
+what you just typed. But the keystroke that triggers them is still travelling: a low-level keyboard
+hook runs *before* the character reaches the target window. The old code papered over that with
+`await Task.Delay(35)` — a guess. Type faster than the guess, or land on a busy machine, and the
+backspaces arrived before the character did, so the replacement ate the wrong text.
+
+The hook now **swallows** the triggering keystroke instead of waiting for it. The character never
+reaches the document, nothing is in flight, and we type the whole result ourselves in one atomic
+`SendInput`. There is no race left to lose. This is how text expanders have always done it.
+
+Consequences, all of them deliberate:
+
+- The hook decides *synchronously* whether a replacement is coming, because it must swallow the key
+  before letting it through. Snippet expansion therefore consults a new in-memory `IsKnownTrigger`
+  predicate; an ordinary word's space is never held hostage by a database lookup that will find nothing.
+- The payloads (`LayoutCorrection`, `WordBoundary`) now carry `CharsToDelete` — counted by the hook,
+  the only place that knows both what it swallowed and that the Thai layout silently rejects some
+  keys — and `SwallowedText`. Handlers no longer do that arithmetic.
+- If a replacement turns out not to happen (a secure field, no matching snippet, a failed injection),
+  the handler types `SwallowedText` back. Swallowing a key means owning it.
+- At a word boundary, only one of expansion and correction may fire; an expansion wins, because the
+  user typed a trigger deliberately.
+
+Verified end-to-end against the running app at 8 ms and 4 ms per keystroke — cadences at which the old
+delay corrupted text — including negative controls (an ordinary word and a non-trigger keep their space).
+
 ## [0.5.1]
 
 ### Fixed: an over-long run could be rewritten at the wrong place

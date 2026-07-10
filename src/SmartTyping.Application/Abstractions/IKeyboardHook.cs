@@ -68,6 +68,14 @@ public interface IKeyboardHook : IDisposable
     Func<string, bool>? IsCompleteTrigger { get; set; }
 
     /// <summary>
+    /// Fast, synchronous test for "this word is a snippet trigger", including triggers that are a
+    /// prefix of a longer one and so only expand on a delimiter. Same threading contract as
+    /// <see cref="IsCompleteTrigger"/>. The hook consults it before swallowing the delimiter, so it
+    /// never takes a keystroke that no expansion will replace.
+    /// </summary>
+    Func<string, bool>? IsKnownTrigger { get; set; }
+
+    /// <summary>
     /// When true (and <see cref="SuggestionsEnabled"/> is on), a detected wrong-layout word is
     /// corrected automatically on the next space instead of only being suggested.
     /// </summary>

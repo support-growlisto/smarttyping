@@ -13,4 +13,10 @@ public interface IInlineReplacer
     /// at that index within the inserted text (for snippet <c>{cursor}</c> markers).
     /// </summary>
     Task<bool> ReplaceAsync(int charsToDelete, string replacement, int? cursorOffset = null);
+
+    /// <summary>
+    /// Types <paramref name="text"/> at the caret, deleting nothing. Used to give back the keystroke
+    /// the hook swallowed when a replacement turns out not to happen.
+    /// </summary>
+    Task<bool> TypeAsync(string text);
 }
