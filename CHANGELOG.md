@@ -79,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
-## [Unreleased-0.6.1]
+## [0.6.1]
 
 ### Fixed: `้ำ` left behind when correcting a word typed on the Thai layout
 

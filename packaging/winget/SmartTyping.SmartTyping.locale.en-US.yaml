@@ -1,6 +1,6 @@
 # Default-locale manifest (winget).
 PackageIdentifier: SmartTyping.SmartTyping
-PackageVersion: 0.6.0
+PackageVersion: 0.6.1
 PackageLocale: en-US
 Publisher: SmartTyping
 PackageName: SmartTyping Desktop
