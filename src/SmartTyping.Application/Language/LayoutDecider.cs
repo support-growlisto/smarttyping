@@ -49,6 +49,11 @@ public sealed class LayoutDecider
         // What these keys produce (or already produced) on the Thai layout.
         var thai = _converter.Convert(typed, ConversionDirection.EnglishToThai);
 
+        // A typo shouldn't stop us recognising the language, but a near-miss is only trustworthy once
+        // the word is finished. Mid-word (no delimiter) the text is a prefix of something longer, and a
+        // fuzzy hit there would fire against a word the user is still typing.
+        var budget = boundary.Length > 0 ? KeyboardCost.BudgetFor(typed.Length) : -1;
+
         if (thaiLayoutActive)
         {
             // The Thai layout rejects impossible sequences, so only part of `thai` reached the screen.
@@ -59,14 +64,21 @@ public sealed class LayoutDecider
                 return null;
             }
 
-            return _lexicon.IsEnglishWord(typed) && !_lexicon.IsThaiWord(onScreen)
+            var meantEnglish = _lexicon.IsEnglishWord(typed) || _lexicon.IsNearEnglishWord(typed, budget);
+
+            // The veto stays exact: real Thai must never be rewritten because it happens to sit one
+            // key away from an English word.
+            return meantEnglish && !_lexicon.IsThaiWord(onScreen)
                 ? new LayoutCorrection(onScreen, typed, boundary, ToThai: false)
                 : null;
         }
 
-        // A latin layout inserts every key as typed, so the screen shows `typed` verbatim. Convert only
-        // if the Thai reading is a word and what they typed is not an English word.
-        return _lexicon.IsThaiWord(thai) && !_lexicon.IsEnglishWord(typed)
+        // A latin layout inserts every key as typed, so the screen shows `typed` verbatim.
+        var meantThai = _lexicon.IsThaiWord(thai) || _lexicon.IsNearThaiWord(typed, budget);
+
+        // Note the suggestion is the literal transliteration of what they typed — not the dictionary
+        // word we matched. We fix the layout, never the spelling: a typo stays a typo, in Thai.
+        return meantThai && !_lexicon.IsEnglishWord(typed)
             ? new LayoutCorrection(typed, thai, boundary, ToThai: true)
             : null;
     }

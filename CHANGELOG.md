@@ -79,6 +79,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+## [0.5.0]
+
+### A typo no longer hides the language
+Dictionary lookup was exact, so one slipped key meant no correction at all: `l;yldu` (สวัสกี — `d`
+instead of `f`) was simply left as latin. Near-misses now count, scored by where the keys sit on the
+keyboard: a neighbouring key is a plausible slip (15), the wrong shift state is (40), the row above or
+below is (70), and anything else is (100) — not a typo, a different word.
+
+This is the change with the most room to misfire, so it is fenced in on three sides:
+
+1. **Only at a word boundary.** Mid-word the text is a prefix of something longer, and a near-miss
+   there would fire against a word the user is still typing. Mid-word matching stays exact.
+2. **A typo is never silently spell-corrected.** The fuzzy match only answers *"which language did
+   they mean?"*. The text we type back is the literal transliteration of the keys actually pressed —
+   `l;yldu ` becomes `สวัสกี `, not `สวัสดี `. We fix the layout, never the word.
+3. **The budget cannot buy a different word.** It is `min(12 × length, 75)`, and that ceiling is below
+   the cost of a single unrelated substitution (100). So a long word never accumulates enough
+   allowance to match something else, and a transposition (`wrold` for `world`, two unrelated
+   substitutions) is rejected outright.
+
+The vetoes stay exact: real Thai is never rewritten because its latin form happens to sit one key away
+from an English word.
+
+Verified against the real dictionaries, not a stub — twelve common English words (`hello`, `world`,
+`system`, `commit`, `branch`…) survive a fuzzy scan of all 60,537 Thai words. The scan runs inside the
+low-level keyboard hook, which Windows unhooks if it is slow, so it is bucketed by word length and
+abandons a candidate the moment the budget is blown: a worst-case miss measures **1.5 ms**, only ever
+on a space, against Windows' 300 ms timeout.
+
 ## [0.4.0]
 
 ### Never type on your behalf in the wrong app

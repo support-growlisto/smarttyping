@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using SmartTyping.Application.Abstractions;
+using SmartTyping.Application.Language;
 using SmartTyping.Infrastructure.Language;
 using Xunit;
 
@@ -30,7 +31,10 @@ public sealed class EmbeddedLexiconTests
 
     private static EmbeddedLexicon LoadedLexicon(ILearnedWordRepository? learned = null)
     {
-        var lexicon = new EmbeddedLexicon(learned ?? new FakeLearnedWords(), NullLogger<EmbeddedLexicon>.Instance);
+        var lexicon = new EmbeddedLexicon(
+            learned ?? new FakeLearnedWords(),
+            new KeyboardLayoutConverter(),
+            NullLogger<EmbeddedLexicon>.Instance);
 
         // Loading runs on a background thread; give it a bounded wait rather than sleeping blindly.
         var clock = Stopwatch.StartNew();

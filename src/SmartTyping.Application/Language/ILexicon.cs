@@ -16,6 +16,16 @@ public interface ILexicon
     bool IsEnglishWord(string word);
 
     /// <summary>
+    /// True when the keys in <paramref name="latinTyped"/> spell a Thai word, allowing for typos worth
+    /// no more than <paramref name="budget"/> under <see cref="KeyboardCost"/>. Compared in latin space
+    /// because the slip happened on a physical key.
+    /// </summary>
+    bool IsNearThaiWord(string latinTyped, int budget);
+
+    /// <summary>As <see cref="IsNearThaiWord"/>, for the English vocabulary.</summary>
+    bool IsNearEnglishWord(string typed, int budget);
+
+    /// <summary>
     /// Adds a word the user taught us — the text they restored by undoing a correction. It joins the
     /// given language's vocabulary, so the decider's veto stops correcting it. Persisted.
     /// </summary>

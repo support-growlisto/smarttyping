@@ -1,4 +1,5 @@
 using SmartTyping.Application.Language;
+using SmartTyping.Domain.Enums;
 using Xunit;
 
 namespace SmartTyping.Tests;
@@ -18,10 +19,19 @@ public sealed class LayoutDeciderTests
             "hello", "world", "the", "soy", "sit", "don"
         };
 
+        private static readonly KeyboardLayoutConverter Converter = new();
+
         public bool IsReady { get; set; } = true;
         public bool IsThaiWord(string word) => _thai.Contains(word);
         public bool IsEnglishWord(string word) => _english.Contains(word);
         public void Learn(string word, bool isThai) => (isThai ? _thai : _english).Add(word);
+
+        // Mirrors EmbeddedLexicon: Thai words are compared as the latin keys that type them.
+        public bool IsNearThaiWord(string latinTyped, int budget) => _thai.Any(word =>
+            KeyboardCost.Distance(latinTyped, Converter.Convert(word, ConversionDirection.ThaiToEnglish), budget) >= 0);
+
+        public bool IsNearEnglishWord(string typed, int budget) =>
+            _english.Any(word => KeyboardCost.Distance(typed, word, budget) >= 0);
     }
 
     private static LayoutDecider Create(FakeLexicon? lexicon = null) =>
@@ -158,5 +168,80 @@ public sealed class LayoutDeciderTests
     {
         var result = Create().Decide("l;ylfu", thaiLayoutActive: false, boundary: " ");
         Assert.Equal(" ", result!.Boundary);
+    }
+
+    // ---- Typo tolerance (only once the word is finished) ----
+
+    // สวัสดี is "l;ylfu"; hitting 'd' instead of 'f' is the key next door and yields สวัสกี.
+    private const string TypoedSawasdee = "l;yldu";
+
+    [Fact]
+    public void OneNeighbouringTypo_StillConverts_AtAWordBoundary()
+    {
+        var result = Create().Decide(TypoedSawasdee, thaiLayoutActive: false, boundary: " ");
+
+        Assert.NotNull(result);
+        Assert.True(result!.ToThai);
+    }
+
+    [Fact]
+    public void ATypoIsNotSilentlySpellCorrected()
+    {
+        // We fix the layout, never the word: the output is the literal transliteration of the keys
+        // they actually pressed — the typo survives, in Thai. Correcting to "สวัสดี" would be the app
+        // rewriting the user's text on a guess.
+        var result = Create().Decide(TypoedSawasdee, thaiLayoutActive: false, boundary: " ");
+
+        Assert.Equal("สวัสกี", result!.Suggestion);
+        Assert.NotEqual("สวัสดี", result.Suggestion);
+    }
+
+    [Fact]
+    public void ATypoDoesNotConvertMidWord()
+    {
+        // Mid-word the text is a prefix of something longer, so a near-miss proves nothing yet.
+        Assert.Null(Create().Decide(TypoedSawasdee, thaiLayoutActive: false, boundary: ""));
+    }
+
+    [Fact]
+    public void ADistantMistake_IsNotATypo()
+    {
+        // 'q' is nowhere near 'f': this is a different word, not a slip.
+        Assert.Null(Create().Decide("l;ylqu", thaiLayoutActive: false, boundary: " "));
+    }
+
+    [Fact]
+    public void RealEnglishStaysEnglish_EvenWithFuzzyEnabled()
+    {
+        // The exact English veto still runs first at a boundary.
+        Assert.Null(Create().Decide("world", thaiLayoutActive: false, boundary: " "));
+        Assert.Null(Create().Decide("hello", thaiLayoutActive: false, boundary: " "));
+    }
+
+    [Fact]
+    public void ATransposedEnglishWord_IsNotMistakenForThai()
+    {
+        // "wrold" is two unrelated substitutions from "world" — far beyond any budget — so it cannot
+        // be fuzzily read as Thai either.
+        Assert.Null(Create().Decide("wrold", thaiLayoutActive: false, boundary: " "));
+    }
+
+    [Fact]
+    public void ThaiLayout_TypoedEnglish_IsRestored()
+    {
+        // "hellp" — 'p' next to 'o' — typed with the Thai layout active.
+        var result = Create().Decide("hellp", thaiLayoutActive: true, boundary: " ");
+
+        Assert.NotNull(result);
+        Assert.False(result!.ToThai);
+        Assert.Equal("hellp", result.Suggestion); // again: no spell-correction
+    }
+
+    [Fact]
+    public void ThaiLayout_RealThaiWord_IsNeverRewrittenByFuzz()
+    {
+        // The Thai veto stays exact on purpose: ทดสอบ must survive even if its latin form happens to
+        // sit one key away from some English word.
+        Assert.Null(Create().Decide("mflvb", thaiLayoutActive: true, boundary: " "));
     }
 }

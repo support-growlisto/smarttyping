@@ -3,6 +3,7 @@ using System.IO.Compression;
 using Microsoft.Extensions.Logging;
 using SmartTyping.Application.Abstractions;
 using SmartTyping.Application.Language;
+using SmartTyping.Domain.Enums;
 
 namespace SmartTyping.Infrastructure.Language;
 
@@ -22,6 +23,7 @@ public sealed class EmbeddedLexicon : ILexicon
     private const string EnglishResource = "SmartTyping.Infrastructure.words_en.txt.gz";
 
     private readonly ILearnedWordRepository _learned;
+    private readonly IKeyboardLayoutConverter _converter;
     private readonly ILogger<EmbeddedLexicon> _logger;
 
     // Learned words are consulted on the hook thread while the undo handler adds to them.
@@ -30,11 +32,22 @@ public sealed class EmbeddedLexicon : ILexicon
 
     private HashSet<string>? _thai;
     private HashSet<string>? _english;
+
+    // Words bucketed by length for the fuzzy lookup: only same-length candidates can match, and the
+    // buckets keep a near-miss scan to a few thousand comparisons instead of hundreds of thousands.
+    // Thai words are stored as the latin keys that produce them, because the typo happened on a key.
+    private IReadOnlyDictionary<int, string[]>? _thaiAsLatinByLength;
+    private IReadOnlyDictionary<int, string[]>? _englishByLength;
+
     private volatile bool _ready;
 
-    public EmbeddedLexicon(ILearnedWordRepository learned, ILogger<EmbeddedLexicon> logger)
+    public EmbeddedLexicon(
+        ILearnedWordRepository learned,
+        IKeyboardLayoutConverter converter,
+        ILogger<EmbeddedLexicon> logger)
     {
         _learned = learned;
+        _converter = converter;
         _logger = logger;
         _ = Task.Run(LoadAsync);
     }
@@ -46,6 +59,36 @@ public sealed class EmbeddedLexicon : ILexicon
 
     public bool IsEnglishWord(string word) =>
         _ready && (_english!.Contains(word) || _learnedEnglish.ContainsKey(word));
+
+    public bool IsNearThaiWord(string latinTyped, int budget) =>
+        _ready && HasNeighbour(_thaiAsLatinByLength!, latinTyped, budget, StringComparison.Ordinal);
+
+    public bool IsNearEnglishWord(string typed, int budget) =>
+        _ready && HasNeighbour(_englishByLength!, typed, budget, StringComparison.OrdinalIgnoreCase);
+
+    private static bool HasNeighbour(
+        IReadOnlyDictionary<int, string[]> byLength, string typed, int budget, StringComparison comparison)
+    {
+        if (budget < 0 || typed.Length == 0 || !byLength.TryGetValue(typed.Length, out var candidates))
+        {
+            return false;
+        }
+
+        foreach (var candidate in candidates)
+        {
+            if (typed.Equals(candidate, comparison))
+            {
+                return true; // exact hit costs nothing
+            }
+
+            if (KeyboardCost.Distance(typed, candidate, budget) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     public void Learn(string word, bool isThai)
     {
@@ -87,6 +130,11 @@ public sealed class EmbeddedLexicon : ILexicon
                 (word.IsThai ? _learnedThai : _learnedEnglish).TryAdd(word.Word, 0);
             }
 
+            // Index for the fuzzy lookup. Thai words are keyed by the latin characters that type them.
+            _thaiAsLatinByLength = BucketByLength(
+                thai.Select(word => _converter.Convert(word, ConversionDirection.ThaiToEnglish)));
+            _englishByLength = BucketByLength(english);
+
             _thai = thai;
             _english = english;
             _ready = true;
@@ -101,6 +149,11 @@ public sealed class EmbeddedLexicon : ILexicon
             _logger.LogError(ex, "Failed to load the bundled word lists; layout auto-correction is disabled.");
         }
     }
+
+    private static IReadOnlyDictionary<int, string[]> BucketByLength(IEnumerable<string> words) =>
+        words.Where(word => word.Length > 0)
+             .GroupBy(word => word.Length)
+             .ToDictionary(group => group.Key, group => group.ToArray());
 
     private static HashSet<string> ReadWords(string resource, StringComparer comparer)
     {
