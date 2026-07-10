@@ -73,6 +73,15 @@
                    TextWrapping="Wrap" FontSize="11" Margin="24,0,0,0"
                    Foreground="{DynamicResource Brush.SubtleForeground}" />
 
+        <TextBlock Text="{Binding [Settings_BlockedApps], Source={x:Static loc:LocalizationManager.Instance}}"
+                   Margin="0,14,0,4" />
+        <TextBox Text="{Binding BlockedApps, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                 TextWrapping="Wrap" AcceptsReturn="False" MinHeight="52" MaxHeight="80"
+                 VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top" />
+        <TextBlock Text="{Binding [Settings_BlockedAppsHint], Source={x:Static loc:LocalizationManager.Instance}}"
+                   TextWrapping="Wrap" FontSize="11" Margin="0,4,0,0"
+                   Foreground="{DynamicResource Brush.SubtleForeground}" />
+
         <TextBlock Text="{Binding [Settings_Updates], Source={x:Static loc:LocalizationManager.Instance}}"
                    FontWeight="SemiBold" Margin="0,16,0,4" />
         <CheckBox Content="{Binding [Settings_CheckForUpdates], Source={x:Static loc:LocalizationManager.Instance}}"

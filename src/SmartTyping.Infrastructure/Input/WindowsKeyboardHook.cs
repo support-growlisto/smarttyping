@@ -23,6 +23,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     private readonly ILogger<WindowsKeyboardHook> _logger;
     private readonly IKeyboardLayoutConverter _converter;
     private readonly LayoutDecider _decider;
+    private readonly IForegroundApp _foregroundApp;
 
     // Keep the delegates alive for the lifetime of the hooks (prevents GC of the callbacks).
     private readonly NativeMethods.LowLevelKeyboardProc _proc;
@@ -43,11 +44,16 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     // undo hotkey so it only fires when the correction really is the last thing that happened.
     private volatile bool _undoArmed;
 
-    public WindowsKeyboardHook(ILogger<WindowsKeyboardHook> logger, IKeyboardLayoutConverter converter, LayoutDecider decider)
+    public WindowsKeyboardHook(
+        ILogger<WindowsKeyboardHook> logger,
+        IKeyboardLayoutConverter converter,
+        LayoutDecider decider,
+        IForegroundApp foregroundApp)
     {
         _logger = logger;
         _converter = converter;
         _decider = decider;
+        _foregroundApp = foregroundApp;
         _proc = HookCallback;
         _mouseProc = MouseCallback;
     }
@@ -79,6 +85,8 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     public bool AutoExpandEnabled { get; set; }
 
     public Func<string, bool>? IsCompleteTrigger { get; set; }
+
+    public AppBlocklist Blocklist { get; set; } = new(AppBlocklist.Defaults);
 
     public void UpdateBindings(IReadOnlyDictionary<HotkeyAction, Hotkey> bindings) => _bindings = bindings;
 
@@ -200,6 +208,16 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                 if (!matched && !IsModifierKey(vk))
                 {
                     _undoArmed = false;
+                }
+
+                // Never type on the user's behalf inside a terminal, a remote session or a game: the
+                // keystrokes we synthesize would run commands, travel to another machine, or be read
+                // as raw input. Explicit hotkeys above still work — those are a deliberate act.
+                if (Blocklist.IsBlocked(_foregroundApp.GetProcessName()))
+                {
+                    _wordBuffer.Clear();
+                    _undoArmed = false;
+                    return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
                 }
 
                 // Track plain typing for as-you-type features (layout hint / auto-expand). Only when a

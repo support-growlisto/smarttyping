@@ -73,6 +73,13 @@ public sealed class SettingsService
     public Task SetNotificationsEnabledAsync(bool enabled) =>
         SetBoolAsync(SettingKeys.ShowNotifications, enabled);
 
+    /// <summary>Apps where the automatic features must stay silent. Falls back to the defaults.</summary>
+    public async Task<AppBlocklist> GetBlockedAppsAsync() =>
+        AppBlocklist.Parse(await _repository.GetAsync(SettingKeys.BlockedApps));
+
+    public Task SetBlockedAppsAsync(AppBlocklist blocklist) =>
+        _repository.SetAsync(SettingKeys.BlockedApps, blocklist.ToString());
+
     /// <summary>The AI provider id (e.g. "gemini"). Defaults to Gemini.</summary>
     public async Task<string> GetAiProviderAsync()
     {

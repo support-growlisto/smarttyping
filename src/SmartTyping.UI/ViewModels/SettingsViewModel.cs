@@ -58,6 +58,7 @@ public sealed class SettingsViewModel : ObservableObject
     private bool _autoCorrectAutoApply;
     private bool _autoExpandEnabled;
     private bool _notificationsEnabled = true;
+    private string _blockedApps = string.Empty;
     private string _aiApiKey = string.Empty;
     private bool _startWithWindows;
     private bool _checkForUpdates;
@@ -270,6 +271,29 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Comma-separated executable names where the automatic features stay silent. Applied to the hook
+    /// immediately; an empty box means "use the defaults" rather than "block nothing".
+    /// </summary>
+    public string BlockedApps
+    {
+        get => _blockedApps;
+        set
+        {
+            if (!SetProperty(ref _blockedApps, value))
+            {
+                return;
+            }
+
+            var blocklist = AppBlocklist.Parse(value);
+            _hook.Blocklist = blocklist;
+            if (!_loading)
+            {
+                _ = _settings.SetBlockedAppsAsync(blocklist);
+            }
+        }
+    }
+
     public string AiApiKey
     {
         get => _aiApiKey;
@@ -352,6 +376,7 @@ public sealed class SettingsViewModel : ObservableObject
             AutoCorrectAutoApply = await _settings.IsAutoCorrectAutoApplyEnabledAsync();
             AutoExpandEnabled = await _settings.IsAutoExpandEnabledAsync();
             NotificationsEnabled = await _settings.IsNotificationsEnabledAsync();
+            BlockedApps = (await _settings.GetBlockedAppsAsync()).ToString();
             AiApiKey = await _settings.GetAiApiKeyAsync();
             // The registry is the source of truth for auto-start.
             StartWithWindows = _startup.IsEnabled();

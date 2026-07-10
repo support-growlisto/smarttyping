@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddSingleton<ISelectionService, WindowsSelectionService>();
         services.AddSingleton<ISecureInputDetector, WindowsSecureInputDetector>();
         services.AddSingleton<IForegroundWindowService, WindowsForegroundWindowService>();
+        services.AddSingleton<IForegroundApp, WindowsForegroundApp>();
         // Word lists for the layout decision (loaded once, off-thread) and the pure decider over them.
         services.AddSingleton<Application.Language.ILexicon, Language.EmbeddedLexicon>();
         services.AddSingleton<Application.Language.LayoutDecider>();

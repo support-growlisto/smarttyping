@@ -79,6 +79,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+## [0.4.0]
+
+### Never type on your behalf in the wrong app
+The automatic features work by synthesizing backspaces and characters into whatever has focus. That
+is fine in a text field and destructive elsewhere, so they now stay silent in a configurable list of
+apps (Settings → "Never type in these apps"):
+
+- **terminals** — a stray character lands on a command line and may run;
+- **remote desktop / VMs** — the keystrokes are forwarded to another machine, where our idea of what
+  is on screen is simply wrong;
+- **password managers** — never touch a vault field;
+- **games and launchers** — they read raw key state, and synthetic input often reads as cheating.
+
+Explicit hotkeys keep working everywhere: pressing one is a deliberate act, unlike typing a word and
+having the app rewrite it. An empty list restores the defaults rather than blocking nothing, and an
+unidentifiable foreground process is never treated as blocked — we must not silently disable
+ourselves because a window could not be inspected.
+
+Matching ignores path, case and the `.exe` suffix, so `C:\Windows\System32\cmd.exe` matches `cmd`,
+while `cmder` and `xcmd` do not.
+
+The check runs on the keyboard hook for every keystroke, and a low-level hook that is too slow gets
+removed by Windows. The process name is therefore cached against the foreground window handle: it is
+only looked up when you switch windows.
+
 ## [0.3.0]
 
 ### Undo a correction — and it learns from it

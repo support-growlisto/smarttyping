@@ -77,6 +77,10 @@ internal static class Strings
             ["Settings_NotificationsHint"] = (
                 "Tray pop-ups after a conversion, expansion or AI edit. Turn off to work silently — the features still run.",
                 "ข้อความเด้งมุมจอหลังแปลงภาษา ขยาย snippet หรือ AI · ปิดได้เพื่อให้เงียบ ฟีเจอร์ยังทำงานปกติ"),
+            ["Settings_BlockedApps"] = ("Never type in these apps:", "ห้ามพิมพ์แทนในแอปเหล่านี้:"),
+            ["Settings_BlockedAppsHint"] = (
+                "Comma-separated program names. The automatic features stay silent here — a terminal could run a stray character, a remote-desktop window sends keys to another machine, and games read raw input. Hotkeys still work. Leave empty to restore the defaults.",
+                "ชื่อโปรแกรมคั่นด้วยจุลภาค · ฟีเจอร์อัตโนมัติจะไม่ทำงานในแอปเหล่านี้ — terminal อาจรันคำสั่งจากตัวอักษรหลง, หน้าต่าง remote desktop ส่งปุ่มไปเครื่องอื่น, เกมอ่าน raw input · คีย์ลัดยังใช้ได้ · เว้นว่างเพื่อกลับไปใช้ค่าเริ่มต้น"),
             ["Settings_Language"] = ("Language:", "ภาษา:"),
             ["Settings_Theme"] = ("Theme:", "ธีม:"),
             ["Theme_System"] = ("System", "ตามระบบ"),

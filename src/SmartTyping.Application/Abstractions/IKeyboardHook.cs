@@ -53,6 +53,13 @@ public interface IKeyboardHook : IDisposable
     bool AutoExpandEnabled { get; set; }
 
     /// <summary>
+    /// Applications where the hook must never type on the user's behalf (terminals, remote sessions,
+    /// games…). Only the automatic features are suppressed; explicit hotkeys remain available,
+    /// because pressing one is a deliberate act.
+    /// </summary>
+    Settings.AppBlocklist Blocklist { get; set; }
+
+    /// <summary>
     /// Fast, synchronous test for "the text typed so far is a complete snippet trigger". Set by the
     /// auto-expand coordinator from an in-memory index; called on the hook thread after every
     /// keystroke, so it must not touch the database or block. When it returns true the trigger is

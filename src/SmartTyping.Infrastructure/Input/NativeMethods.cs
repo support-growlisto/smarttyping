@@ -192,6 +192,21 @@ internal static class NativeMethods
 
     public const uint WM_INPUTLANGCHANGEREQUEST = 0x0050;
 
+    // Just enough rights to read the image name; PROCESS_QUERY_LIMITED_INFORMATION works for
+    // elevated processes too, where PROCESS_QUERY_INFORMATION would be denied.
+    public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr OpenProcess(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, uint processId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool CloseHandle(IntPtr handle);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool QueryFullProcessImageName(IntPtr process, uint flags, System.Text.StringBuilder exeName, ref uint size);
+
     [DllImport("user32.dll")]
     public static extern uint GetKeyboardLayoutList(int nBuff, [Out] IntPtr[]? lpList);
 

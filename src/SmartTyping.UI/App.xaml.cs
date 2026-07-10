@@ -110,6 +110,7 @@ public partial class App : System.Windows.Application
             hook.SuggestionsEnabled = settings.IsAutoCorrectSuggestEnabledAsync().GetAwaiter().GetResult();
             hook.AutoApplySuggestions = settings.IsAutoCorrectAutoApplyEnabledAsync().GetAwaiter().GetResult();
             hook.AutoExpandEnabled = settings.IsAutoExpandEnabledAsync().GetAwaiter().GetResult();
+            hook.Blocklist = settings.GetBlockedAppsAsync().GetAwaiter().GetResult();
 
             // Correcting mid-word only makes sense if we can then switch the user to Thai; otherwise
             // the rest of the word would keep coming out latin. Fall back to the space-boundary fix.

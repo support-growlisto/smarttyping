@@ -21,6 +21,7 @@ public static class SettingKeys
     public const string AutoCorrectAuto = "AutoCorrectAuto";
     public const string AutoExpandSnippets = "AutoExpandSnippets";
     public const string ShowNotifications = "ShowNotifications";
+    public const string BlockedApps = "BlockedApps";
     public const string HotkeyAiImprove = "HotkeyAiImprove";
     public const string HotkeyUndoCorrection = "HotkeyUndoCorrection";
     public const string AiProvider = "AiProvider";
