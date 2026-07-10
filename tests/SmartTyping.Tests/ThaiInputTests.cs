@@ -10,8 +10,17 @@ public sealed class ThaiInputTests
     // "hello" on the Thai layout maps to ้ำสสน, but the tone and sara-am have no base consonant,
     // so Windows drops them and only สสน is inserted. Observed on a real machine.
     [InlineData("้ำสสน", "สสน")]
-    // "the" -> ะ้ำ : all three are dependent marks with nothing to attach to.
-    [InlineData("ะ้ำ", "")]
+    // "the" -> ะ้ำ. Measured by typing it into a text box: ะ stands on its own and survives, while the
+    // tone and the sara-am after it have no consonant to attach to and are dropped.
+    [InlineData("ะ้ำ", "ะ")]
+    // Thanthakhat stacks on top of a vowel — which is how สิทธิ์ and พันธุ์ are actually typed.
+    [InlineData("สิทธิ์", "สิทธิ์")]
+    [InlineData("พันธุ์", "พันธุ์")]
+    // ะ after the spacing vowel า, and the marks that attach to nothing and so may even come first.
+    [InlineData("กระเจาะ", "กระเจาะ")]
+    [InlineData("เคราะห์", "เคราะห์")]
+    [InlineData("ฯลฯ", "ฯลฯ")]
+    [InlineData("ๆๆ", "ๆๆ")]
     // Correctly-formed Thai passes through untouched.
     [InlineData("สวัสดี", "สวัสดี")]
     [InlineData("หนังสือ", "หนังสือ")]

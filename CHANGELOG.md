@@ -133,6 +133,23 @@ One consequence of typing instead of pasting: a converted string that begins wit
 attached vowel loses those marks, because Windows rejects them with no base consonant — the same rule
 `ThaiInput.Filter` already models, and exactly what you would have got typing the characters yourself.
 
+### Fixed: the Thai input model silently mangled 212 real words
+
+`ThaiInput.Filter` predicts which keystrokes the Thai layout will actually accept — the hook counts on
+it to know how many characters sit behind the caret. It classified the thanthakhat `์` and the nikhahit
+`ํ` as vowels that must attach directly to a consonant, so it "predicted" that `สิทธิ์` and `พันธุ์`
+lose their final mark. They do not: those marks stack on top of a vowel, which is how the words are
+typed. It also rejected `ะ` after the spacing vowel `า` (`กระเจาะ`, `เคราะห์`) and the paiyannoi that
+begins `ฯลฯ`.
+
+Rather than reason about it further, the rules were measured — by typing each sequence into a real text
+box and reading back what Windows kept. `ะ`, `ๅ`, `ๆ` and `ฯ` stand alone and are accepted anywhere,
+even first (so `ะ้ำ` leaves `ะ`, not nothing, as the old model claimed); sara am needs a base; tones and
+thanthakhat may sit on a consonant or on a vowel already resting on one. A test now asserts that all
+60,537 words of the embedded dictionary survive the filter unchanged, save a handful of entries in the
+source list that carry a vowel written on another vowel — typos in the data, which the layout rejects
+exactly as it should.
+
 ### Fixed: Ctrl+Shift+Left selected nothing, so "convert the last word" did nothing
 
 Arrow keys are *extended* keys. Sent through `SendInput` without `KEYEVENTF_EXTENDEDKEY` they arrive as

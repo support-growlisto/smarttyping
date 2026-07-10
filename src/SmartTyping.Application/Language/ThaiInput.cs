@@ -16,13 +16,25 @@ public static class ThaiInput
     // Independent vowels that may stand before a consonant.
     private static bool IsLeadingVowel(char c) => c is 'เ' or 'แ' or 'โ' or 'ใ' or 'ไ';
 
+    // Vowels written above or below a consonant. They attach to the consonant itself, so they need one
+    // directly before them.
     private static bool IsAttachedVowel(char c) =>
-        c is 'ั' or 'ิ' or 'ี' or 'ึ' or 'ื' or 'ุ' or 'ู' or '็' or '์' or 'ํ';
+        c is 'ั' or 'ิ' or 'ี' or 'ึ' or 'ื' or 'ุ' or 'ู' or '็';
 
-    private static bool IsTone(char c) => c is '่' or '้' or '๊' or '๋';
+    // Marks that sit on top of the stack: a tone, the thanthakhat that silences a letter, the nikhahit.
+    // They may land on a bare consonant or on one that already carries a vowel — which is how สิทธิ์ and
+    // พันธุ์ are typed (ธ, then ิ/ุ, then ์). Treating ์ as an attached vowel used to strip it from all
+    // 212 such words in the dictionary.
+    private static bool IsStackedMark(char c) => c is '่' or '้' or '๊' or '๋' or '์' or 'ํ';
 
-    // Marks that follow a consonant (optionally with a vowel/tone on it): น้ำ, กะ, ไปๆ.
-    private static bool IsTrailingMark(char c) => c is 'ำ' or 'ะ' or 'ๅ' or 'ๆ' or 'ฯ';
+    // ะ, ๅ, ๆ and ฯ occupy a column of their own and attach to nothing, so the layout accepts them
+    // anywhere — even first — and they fall through to the "always inserted" branch below. Measured by
+    // typing them into a text box: ฯลฯ, ฯพณฯ and ๆๆ survive verbatim, and "ะ้ำ" (what "the" produces on
+    // the Thai layout) leaves ะ behind.
+
+    // Sara am is a composed vowel (nikhahit + sara aa), so it does need something to sit on: น้ำ is
+    // accepted, but ำ at the start of the text — or after a bare ะ — is not.
+    private static bool IsSaraAm(char c) => c is 'ำ';
 
     /// <summary>
     /// Returns the subsequence of <paramref name="thai"/> that the Thai layout would actually insert.
@@ -46,17 +58,17 @@ public static class ThaiInput
             {
                 accepted = IsConsonant(previous);
             }
-            else if (IsTone(c))
+            else if (IsStackedMark(c))
             {
                 accepted = IsConsonant(previous) || IsAttachedVowel(previous);
             }
-            else if (IsTrailingMark(c))
+            else if (IsSaraAm(c))
             {
-                accepted = IsConsonant(previous) || IsAttachedVowel(previous) || IsTone(previous);
+                accepted = IsConsonant(previous) || IsAttachedVowel(previous) || IsStackedMark(previous);
             }
             else
             {
-                // Consonants, leading vowels, digits, punctuation, latin — always inserted.
+                // Consonants, leading and spacing vowels, the free marks, digits, punctuation, latin.
                 accepted = true;
             }
 
