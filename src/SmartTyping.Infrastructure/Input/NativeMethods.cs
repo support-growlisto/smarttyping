@@ -52,8 +52,21 @@ internal static class NativeMethods
     public const int LANG_THAI = 0x1E;
 
     public const uint INPUT_KEYBOARD = 1;
+    public const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
     public const uint KEYEVENTF_KEYUP = 0x0002;
     public const uint KEYEVENTF_UNICODE = 0x0004;
+
+    /// <summary>
+    /// The virtual-keys that live on the "extended" part of the keyboard (the arrow/navigation cluster,
+    /// among others). Sent through <c>SendInput</c> without <see cref="KEYEVENTF_EXTENDEDKEY"/> they are
+    /// delivered as their numeric-keypad twins — a bare Left still moves the caret, but Ctrl+Shift+Left
+    /// arrives as Ctrl+Shift+Numpad4 and selects nothing.
+    /// </summary>
+    public static bool IsExtendedKey(int vk) => vk is
+        0x21 or 0x22 or 0x23 or 0x24 or       // PgUp, PgDn, End, Home
+        0x25 or 0x26 or 0x27 or 0x28 or       // Left, Up, Right, Down
+        0x2D or 0x2E or                       // Insert, Delete
+        0x90 or 0xA3 or 0xA5;                 // NumLock, RControl, RAlt
 
     /// <summary>
     /// Stamped into <c>dwExtraInfo</c> on every keystroke this app synthesizes. The low-level hook

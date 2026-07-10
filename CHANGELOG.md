@@ -109,6 +109,39 @@ Consequences, all of them deliberate:
 Verified end-to-end against the running app at 8 ms and 4 ms per keystroke — cadences at which the old
 delay corrupted text — including negative controls (an ordinary word and a non-trigger keep their space).
 
+### Changed: the remaining guessed sleeps are gone too
+
+The hotkey path (select → convert/expand → inject) had three more fixed delays. None of them survived
+contact with the question "what are we actually waiting for?".
+
+- **Selection capture** slept 40 ms after Ctrl+Shift+Left "so the selection would happen". The sentinel
+  is now placed on the clipboard *before* any key is sent, and the two keystrokes are queued in order —
+  the target cannot process the Ctrl+C before the Ctrl+Shift+Left that precedes it. Where a copy still
+  fails to land, we no longer time out and report "nothing selected": we re-send Ctrl+C until the
+  clipboard actually changes, which is the only real signal that the copy happened.
+- **Text injection** slept 80 ms "to let the target read the clipboard" before restoring it. No amount
+  of polling can observe another process reading the clipboard, so the sleep could never be made
+  correct — apps that read it late got the *restored* contents, which is how injected text used to
+  vanish. The injector now types the text as Unicode keystrokes, exactly as the inline replacer does:
+  no clipboard, no snapshot/restore, nothing to race. Your clipboard is no longer touched at all.
+- **Quick picker** slept 120 ms after asking Windows to refocus the app you came from.
+  `SetForegroundWindow` only *asks*; the activation lands later. It now waits until that window really
+  is the foreground window, and if it never becomes one it types nothing rather than dropping your
+  snippet into whatever happened to be in front.
+
+One consequence of typing instead of pasting: a converted string that begins with a Thai tone mark or
+attached vowel loses those marks, because Windows rejects them with no base consonant — the same rule
+`ThaiInput.Filter` already models, and exactly what you would have got typing the characters yourself.
+
+### Fixed: Ctrl+Shift+Left selected nothing, so "convert the last word" did nothing
+
+Arrow keys are *extended* keys. Sent through `SendInput` without `KEYEVENTF_EXTENDEDKEY` they arrive as
+their numeric-keypad twins. A bare Left still moves the caret, which is why this hid for so long — but
+Ctrl+Shift+Left arrived as Ctrl+Shift+Numpad4 and selected nothing. So pressing the conversion hotkey
+with no selection captured an empty string and silently gave up: the documented "convert the word I just
+typed" (FR-7) had never worked. Measured on a real text box: without the flag `SelectedText` was `""`,
+with it, `"hello"`. All synthetic navigation keys now carry the flag.
+
 ## [0.5.1]
 
 ### Fixed: an over-long run could be rewritten at the wrong place

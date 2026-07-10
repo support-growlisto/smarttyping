@@ -149,6 +149,33 @@ internal static class KeyboardSender
         NativeMethods.SendInput((uint)batch.Length, batch, Marshal.SizeOf<NativeMethods.INPUT>());
     }
 
+    /// <summary>
+    /// How many Left taps walk the caret from the end of <paramref name="text"/> back to
+    /// <paramref name="cursorOffset"/> (a snippet's <c>{cursor}</c> marker). A '\n' costs two caret
+    /// positions because the Enter we send inserts a CRLF; a '\r' is never typed and costs nothing.
+    /// Returns 0 when there is no marker.
+    /// </summary>
+    public static int LeftTapsFor(string text, int? cursorOffset)
+    {
+        if (cursorOffset is not int offset || offset < 0 || offset >= text.Length)
+        {
+            return 0;
+        }
+
+        var taps = 0;
+        for (var i = offset; i < text.Length; i++)
+        {
+            if (text[i] == '\r')
+            {
+                continue;
+            }
+
+            taps += text[i] == '\n' ? 2 : 1;
+        }
+
+        return taps;
+    }
+
     /// <summary>Taps a virtual-key <paramref name="count"/> times (e.g. VK_LEFT to move the caret back).</summary>
     public static void TapKey(int vk, int count)
     {
@@ -171,17 +198,28 @@ internal static class KeyboardSender
 
     private static NativeMethods.INPUT KeyUp(int vk) => KeyEvent((ushort)vk, isUp: true);
 
-    private static NativeMethods.INPUT KeyEvent(ushort vk, bool isUp) => new()
+    private static NativeMethods.INPUT KeyEvent(ushort vk, bool isUp)
     {
-        type = NativeMethods.INPUT_KEYBOARD,
-        u = new NativeMethods.InputUnion
+        // Arrow and navigation keys must be flagged extended, or Windows delivers them as their numpad
+        // twins: Ctrl+Shift+Left then arrives as Ctrl+Shift+Numpad4 and selects nothing.
+        var flags = isUp ? NativeMethods.KEYEVENTF_KEYUP : 0;
+        if (NativeMethods.IsExtendedKey(vk))
         {
-            ki = new NativeMethods.KEYBDINPUT
-            {
-                wVk = vk,
-                dwFlags = isUp ? NativeMethods.KEYEVENTF_KEYUP : 0,
-                dwExtraInfo = NativeMethods.SelfInjectedTag
-            }
+            flags |= NativeMethods.KEYEVENTF_EXTENDEDKEY;
         }
-    };
+
+        return new NativeMethods.INPUT
+        {
+            type = NativeMethods.INPUT_KEYBOARD,
+            u = new NativeMethods.InputUnion
+            {
+                ki = new NativeMethods.KEYBDINPUT
+                {
+                    wVk = vk,
+                    dwFlags = flags,
+                    dwExtraInfo = NativeMethods.SelfInjectedTag
+                }
+            }
+        };
+    }
 }

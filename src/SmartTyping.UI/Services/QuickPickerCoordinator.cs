@@ -75,9 +75,13 @@ public sealed class QuickPickerCoordinator : IDisposable
                 return;
             }
 
-            // Return focus to the original app, then insert at the caret.
-            _foreground.Restore(target);
-            await Task.Delay(120);
+            // Return focus to the original app and wait until it really has it. If it never does, type
+            // nothing: the snippet would land in whatever window happened to be in front.
+            if (!await _foreground.RestoreAsync(target))
+            {
+                _logger.LogInformation("Quick-picker insert skipped: the original window did not regain focus.");
+                return;
+            }
 
             if (_secureInput.IsFocusedFieldSecure())
             {

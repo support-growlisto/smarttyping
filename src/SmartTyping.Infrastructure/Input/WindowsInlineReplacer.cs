@@ -34,23 +34,8 @@ public sealed class WindowsInlineReplacer : IInlineReplacer
 
         try
         {
-            // Walk the caret back to the {cursor} marker. A '\n' costs two caret positions because the
-            // Enter we send inserts a CRLF; '\r' itself is never typed.
-            var leftTaps = 0;
-            if (cursorOffset is int offset && offset >= 0 && offset < replacement.Length)
-            {
-                for (var i = offset; i < replacement.Length; i++)
-                {
-                    if (replacement[i] == '\r')
-                    {
-                        continue;
-                    }
-
-                    leftTaps += replacement[i] == '\n' ? 2 : 1;
-                }
-            }
-
             // One atomic SendInput: the user's next keystroke cannot land inside our edit.
+            var leftTaps = KeyboardSender.LeftTapsFor(replacement, cursorOffset);
             KeyboardSender.ReplaceInline(charsToDelete, replacement, leftTaps);
             return Task.FromResult(true);
         }
