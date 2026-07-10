@@ -24,6 +24,14 @@ public sealed class LayoutDecider
     /// <summary>Shorter runs are too ambiguous to act on automatically.</summary>
     public const int MinimumWordLength = 3;
 
+    /// <summary>
+    /// Longer runs are not a word. Nothing in either dictionary is longer (English tops out at 12
+    /// characters, Thai at 20), and a long uninterrupted run is far more likely to be a password, a
+    /// token or a URL than a word someone typed in the wrong layout — exactly the text an automatic
+    /// rewrite must never touch. It also bounds how much we would replace in one go.
+    /// </summary>
+    public const int MaximumWordLength = 20;
+
     private readonly ILexicon _lexicon;
     private readonly IKeyboardLayoutConverter _converter;
 
@@ -41,7 +49,9 @@ public sealed class LayoutDecider
     /// <param name="boundary">The delimiter that closed the word, or empty when mid-word.</param>
     public LayoutCorrection? Decide(string typed, bool thaiLayoutActive, string boundary)
     {
-        if (!_lexicon.IsReady || string.IsNullOrEmpty(typed) || typed.Length < MinimumWordLength)
+        if (!_lexicon.IsReady ||
+            typed.Length < MinimumWordLength ||
+            typed.Length > MaximumWordLength)
         {
             return null;
         }

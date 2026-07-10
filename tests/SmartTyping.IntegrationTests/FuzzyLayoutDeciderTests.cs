@@ -97,6 +97,28 @@ public sealed class FuzzyLayoutDeciderTests
         Assert.Null(_decider.Decide("l;yldu", thaiLayoutActive: false, boundary: ""));
     }
 
+    [Fact]
+    public void TheLengthCapDoesNotHideEnglishWords()
+    {
+        // Justifies MaximumWordLength: nothing we could match is longer than it.
+        var typed = new string('a', LayoutDecider.MaximumWordLength + 1);
+        Assert.Null(AtBoundary(typed));
+
+        // The English list is filtered to <=12 characters, well inside the cap.
+        Assert.True(_lexicon.IsEnglishWord("performance"));
+    }
+
+    [Fact]
+    public void ALongRunIsNeverConverted()
+    {
+        // A password-shaped run, ending in something that *is* a Thai word ("l;ylfu" = สวัสดี).
+        // Acting on it would rewrite the tail of text we never tracked from the start.
+        var run = new string('x', 30) + "l;ylfu";
+        Assert.True(run.Length > LayoutDecider.MaximumWordLength);
+
+        Assert.Null(AtBoundary(run));
+    }
+
     /// <summary>
     /// The decision runs inside the low-level keyboard hook, and Windows silently unhooks a callback
     /// that is too slow. A miss is the worst case: it scans the whole same-length bucket.

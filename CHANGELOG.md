@@ -79,6 +79,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+## [0.5.1]
+
+### Fixed: an over-long run could be rewritten at the wrong place
+The as-you-type word buffer held 48 characters and then *silently dropped* every further character.
+The buffer stayed at 48 while the document kept growing, so the two disagreed about how much text sat
+behind the caret. Finish such a run with a space and, if its first 48 characters happened to spell a
+word, the corrector would backspace 49 characters from the caret — deleting the tail of the run rather
+than the word it thought it had matched, and pasting the conversion in its place. Backspacing past the
+start of the buffer desynchronised it the same way.
+
+A run that outgrows the buffer is now **abandoned** rather than truncated: tracking stops until the
+next real word break (space, navigation key, mouse click, window switch). Losing track of the caret is
+the one situation where doing nothing is the only safe move.
+
+### A word has a maximum length
+`LayoutDecider` already refused runs shorter than three characters; it now also refuses anything longer
+than twenty. Nothing in either dictionary is longer (English is filtered to 12 characters, Thai to 20),
+and a long uninterrupted run is far more likely to be a password, a token or a URL — exactly the text an
+automatic rewrite must never touch. The bound is inclusive, so a legitimate twenty-character Thai word
+still corrects, and an integration test asserts the cap hides no word we could have matched.
+
 ## [0.5.0]
 
 ### A typo no longer hides the language

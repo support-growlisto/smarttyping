@@ -36,7 +36,17 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
     // As-you-type suggestion state (accessed only on the hook/UI thread — both low-level hooks are
     // called on the thread that installed them, so no locking is needed).
-    private readonly StringBuilder _wordBuffer = new(48);
+    // Long enough for any word in either dictionary, with room to spare. A run that outgrows it is
+    // not a word we could act on anyway.
+    private const int MaxTrackedWordLength = 32;
+
+    private readonly StringBuilder _wordBuffer = new(MaxTrackedWordLength);
+
+    // Set when a run outgrows the buffer. We can no longer say how many characters sit behind the
+    // caret, so acting on the tail would replace text at the wrong place. Tracking stays off until
+    // the next real word break.
+    private bool _wordAbandoned;
+
     private string _lastSuggestedWord = string.Empty;
     private IntPtr _lastForeground = IntPtr.Zero;
 
@@ -140,7 +150,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                 var msg = (int)wParam;
                 if (msg is NativeMethods.WM_LBUTTONDOWN or NativeMethods.WM_RBUTTONDOWN or NativeMethods.WM_MBUTTONDOWN)
                 {
-                    _wordBuffer.Clear();
+                    ResetWord();
 
                     // The caret moved, so the corrected text is no longer behind it.
                     _undoArmed = false;
@@ -215,7 +225,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                 // as raw input. Explicit hotkeys above still work — those are a deliberate act.
                 if (Blocklist.IsBlocked(_foregroundApp.GetProcessName()))
                 {
-                    _wordBuffer.Clear();
+                    ResetWord();
                     _undoArmed = false;
                     return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
                 }
@@ -230,7 +240,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                     var foreground = NativeMethods.GetForegroundWindow();
                     if (foreground != _lastForeground)
                     {
-                        _wordBuffer.Clear();
+                        ResetWord();
                         _lastSuggestedWord = string.Empty;
                         _lastForeground = foreground;
                     }
@@ -263,13 +273,13 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             case NativeMethods.VK_SPACE:
             case NativeMethods.VK_RETURN:
             case NativeMethods.VK_TAB:
-                var completed = _wordBuffer.ToString();
+                var completed = _wordAbandoned ? string.Empty : _wordBuffer.ToString();
                 RaiseSnippetWordCompleted(completed, vk);
                 EvaluateWord(completed, atSpace: vk == NativeMethods.VK_SPACE);
-                _wordBuffer.Clear();
+                ResetWord();
                 return;
             case NativeMethods.VK_BACK:
-                if (_wordBuffer.Length > 0)
+                if (!_wordAbandoned && _wordBuffer.Length > 0)
                 {
                     _wordBuffer.Length--;
                 }
@@ -279,16 +289,38 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         var c = VkToChar(vk, shift);
         if (c == '\0')
         {
-            _wordBuffer.Clear(); // navigation / other keys break the current word
+            ResetWord(); // navigation / other keys break the current word
+            return;
         }
-        else if (_wordBuffer.Length < 48)
+
+        if (_wordAbandoned)
         {
-            _wordBuffer.Append(c);
-            if (!TryExpandCompletedTrigger())
-            {
-                TryCorrectLayoutMidWord();
-            }
+            return; // still inside an over-long run
         }
+
+        if (_wordBuffer.Length == MaxTrackedWordLength)
+        {
+            // Truncating here would desynchronise the buffer from the document: we would believe the
+            // word is 32 characters long while the caret has many more behind it, and a replacement
+            // would backspace over whatever happened to be there. Give up on this run instead.
+            _wordBuffer.Clear();
+            _wordAbandoned = true;
+            _undoArmed = false;
+            return;
+        }
+
+        _wordBuffer.Append(c);
+        if (!TryExpandCompletedTrigger())
+        {
+            TryCorrectLayoutMidWord();
+        }
+    }
+
+    /// <summary>Forgets the current word — the only safe state once we lose track of the caret.</summary>
+    private void ResetWord()
+    {
+        _wordBuffer.Clear();
+        _wordAbandoned = false;
     }
 
     // Correct wrong-layout Thai the moment it is recognisable, without waiting for a space. The

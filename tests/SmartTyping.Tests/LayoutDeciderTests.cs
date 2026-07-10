@@ -114,6 +114,27 @@ public sealed class LayoutDeciderTests
         Assert.Null(Create().Decide(typed, thaiLayoutActive: false, boundary: ""));
 
     [Fact]
+    public void LongRuns_AreIgnored()
+    {
+        // Longer than any dictionary word: a password, a token or a URL — never something an
+        // automatic rewrite should touch.
+        var tooLong = new string('l', LayoutDecider.MaximumWordLength + 1);
+
+        Assert.Null(Create().Decide(tooLong, thaiLayoutActive: false, boundary: " "));
+    }
+
+    [Fact]
+    public void AWordExactlyAtTheLimit_IsStillConsidered()
+    {
+        // The bound must be inclusive, or a legitimate 20-character Thai word would be skipped.
+        var lexicon = new FakeLexicon();
+        var atLimit = new string('l', LayoutDecider.MaximumWordLength);
+        lexicon.Learn(new KeyboardLayoutConverter().Convert(atLimit, ConversionDirection.EnglishToThai), isThai: true);
+
+        Assert.NotNull(Create(lexicon).Decide(atLimit, thaiLayoutActive: false, boundary: " "));
+    }
+
+    [Fact]
     public void UnloadedLexicon_DoesNothing()
     {
         var lexicon = new FakeLexicon { IsReady = false };
