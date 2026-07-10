@@ -40,6 +40,12 @@ public interface IKeyboardHook : IDisposable
     /// </summary>
     event EventHandler<Language.WordBoundary>? SnippetWordCompleted;
 
+    /// <summary>
+    /// Raised when the undo hotkey is pressed and a correction was the last thing that happened. The
+    /// hook swallows that keystroke, so the handler must fully restore the original text.
+    /// </summary>
+    event EventHandler? UndoCorrectionRequested;
+
     /// <summary>Enables/disables the non-destructive as-you-type layout suggestions.</summary>
     bool SuggestionsEnabled { get; set; }
 

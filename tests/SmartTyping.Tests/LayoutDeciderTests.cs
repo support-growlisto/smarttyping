@@ -8,19 +8,20 @@ public sealed class LayoutDeciderTests
     // Only the words these tests need. The real dictionaries are much larger.
     private sealed class FakeLexicon : ILexicon
     {
-        private static readonly HashSet<string> Thai = new(StringComparer.Ordinal)
+        private readonly HashSet<string> _thai = new(StringComparer.Ordinal)
         {
             "หนังสือ", "หนัง", "สวัสดี", "ทดสอบ", "ไทย"
         };
 
-        private static readonly HashSet<string> English = new(StringComparer.OrdinalIgnoreCase)
+        private readonly HashSet<string> _english = new(StringComparer.OrdinalIgnoreCase)
         {
             "hello", "world", "the", "soy", "sit", "don"
         };
 
         public bool IsReady { get; set; } = true;
-        public bool IsThaiWord(string word) => Thai.Contains(word);
-        public bool IsEnglishWord(string word) => English.Contains(word);
+        public bool IsThaiWord(string word) => _thai.Contains(word);
+        public bool IsEnglishWord(string word) => _english.Contains(word);
+        public void Learn(string word, bool isThai) => (isThai ? _thai : _english).Add(word);
     }
 
     private static LayoutDecider Create(FakeLexicon? lexicon = null) =>
@@ -107,6 +108,49 @@ public sealed class LayoutDeciderTests
     {
         var lexicon = new FakeLexicon { IsReady = false };
         Assert.Null(Create(lexicon).Decide("l;ylfu", thaiLayoutActive: false, boundary: ""));
+    }
+
+    // ---- Learning: undoing a correction must stop it happening again ----
+
+    [Fact]
+    public void LearningTheOriginal_StopsTheSameCorrection_LatinLayout()
+    {
+        var lexicon = new FakeLexicon();
+        var decider = Create(lexicon);
+
+        // "soy'lnv" would normally become หนังสือ...
+        Assert.NotNull(decider.Decide("soy'lnv", thaiLayoutActive: false, boundary: ""));
+
+        // ...but the user undid it, so we learn the latin as an English word. The English veto now
+        // blocks the conversion for good.
+        lexicon.Learn("soy'lnv", isThai: false);
+        Assert.Null(decider.Decide("soy'lnv", thaiLayoutActive: false, boundary: ""));
+    }
+
+    [Fact]
+    public void LearningTheOriginal_StopsTheSameCorrection_ThaiLayout()
+    {
+        var lexicon = new FakeLexicon();
+        var decider = Create(lexicon);
+
+        // "hello" typed on the Thai layout shows สสน and would be restored to latin...
+        var first = decider.Decide("hello", thaiLayoutActive: true, boundary: "");
+        Assert.NotNull(first);
+
+        // ...but the user meant that Thai. Learn what was on screen as a Thai word; the Thai veto wins.
+        lexicon.Learn(first!.Original, isThai: true);
+        Assert.Null(decider.Decide("hello", thaiLayoutActive: true, boundary: ""));
+    }
+
+    [Fact]
+    public void LearningIsDirectional_AndDoesNotLeakAcrossLanguages()
+    {
+        var lexicon = new FakeLexicon();
+
+        // Learning the latin as English must not make it a Thai word.
+        lexicon.Learn("soy'lnv", isThai: false);
+        Assert.True(lexicon.IsEnglishWord("soy'lnv"));
+        Assert.False(lexicon.IsThaiWord("soy'lnv"));
     }
 
     [Fact]

@@ -37,6 +37,10 @@ public partial class App : System.Windows.Application
     // Guards the automatic layout-correct handler against overlapping in-flight corrections.
     private int _autoCorrectBusy;
 
+    // The correction the undo hotkey would revert. The hook only lets undo fire while this is still
+    // the last thing that happened, so it never goes stale in a harmful way.
+    private Application.Language.LayoutCorrection? _lastCorrection;
+
     /// <summary>True once the user has chosen to exit, so the main window stops hiding-to-tray.</summary>
     public static bool IsShuttingDown { get; private set; }
 
@@ -174,6 +178,7 @@ public partial class App : System.Windows.Application
         var keyboardHook = _services.GetRequiredService<IKeyboardHook>();
         keyboardHook.LayoutSuggestionRaised += OnLayoutSuggestionRaised;
         keyboardHook.LayoutAutoCorrectRequested += OnLayoutAutoCorrectRequested;
+        keyboardHook.UndoCorrectionRequested += OnUndoCorrectionRequested;
 
         // Surface the window when a second launch signals us.
         _singleInstance.StartListening(() => Dispatcher.Invoke(ShowMainWindow));
@@ -327,6 +332,9 @@ public partial class App : System.Windows.Application
             // the word keeps coming out wrong and they'd have to fix it again.
             _services.GetRequiredService<IKeyboardLayoutSwitcher>().SwitchForeground(correction.ToThai);
 
+            // Remember it so the undo hotkey can put it back verbatim.
+            _lastCorrection = correction;
+
             var loc = Localization.LocalizationManager.Instance;
             Dispatcher.Invoke(() => _tray?.ShowBalloon(loc["Tray_AutoFixed"],
                 loc.Format("Tray_AutoFixedBody", correction.Original, correction.Suggestion)));
@@ -338,6 +346,51 @@ public partial class App : System.Windows.Application
         finally
         {
             Interlocked.Exchange(ref _autoCorrectBusy, 0);
+        }
+    }
+
+    /// <summary>
+    /// Puts back exactly what the user typed before the last automatic correction, restores their
+    /// keyboard layout, and teaches the lexicon that the original text was a real word — so the
+    /// decider's veto stops correcting it from now on.
+    /// </summary>
+    private async void OnUndoCorrectionRequested(object? sender, EventArgs e)
+    {
+        var correction = _lastCorrection;
+        if (correction is null)
+        {
+            return;
+        }
+
+        _lastCorrection = null;
+
+        try
+        {
+            var replacer = _services!.GetRequiredService<IInlineReplacer>();
+            var restored = await replacer.ReplaceAsync(
+                correction.Suggestion.Length + correction.Boundary.Length,
+                correction.Original + correction.Boundary);
+
+            if (!restored)
+            {
+                return;
+            }
+
+            // We had switched the layout to finish the word in the other language; switch it back.
+            _services.GetRequiredService<IKeyboardLayoutSwitcher>().SwitchForeground(!correction.ToThai);
+
+            // Original is the text that was on screen: latin when we converted to Thai, Thai when we
+            // converted back to English. Learn it as a word of the language it was displayed in.
+            _services.GetRequiredService<Application.Language.ILexicon>()
+                .Learn(correction.Original, isThai: !correction.ToThai);
+
+            var loc = Localization.LocalizationManager.Instance;
+            Dispatcher.Invoke(() => _tray?.ShowBalloon(loc["Tray_Undone"],
+                loc.Format("Tray_UndoneBody", correction.Original)));
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Undoing the last layout correction failed.");
         }
     }
 

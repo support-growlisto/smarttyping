@@ -14,4 +14,10 @@ public interface ILexicon
 
     /// <summary>True when <paramref name="word"/> is an English word (case-insensitive).</summary>
     bool IsEnglishWord(string word);
+
+    /// <summary>
+    /// Adds a word the user taught us — the text they restored by undoing a correction. It joins the
+    /// given language's vocabulary, so the decider's veto stops correcting it. Persisted.
+    /// </summary>
+    void Learn(string word, bool isThai);
 }

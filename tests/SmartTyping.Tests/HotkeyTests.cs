@@ -6,6 +6,43 @@ namespace SmartTyping.Tests;
 public sealed class HotkeyTests
 {
     [Fact]
+    public void ShiftPlusBackspace_IsValid_BecauseBackspaceTypesNothing()
+    {
+        // The undo binding. Shift alone is safe here: Backspace never inserts a character.
+        var undo = new Hotkey(HotkeyModifiers.Shift, 0x08);
+
+        Assert.True(undo.IsValid);
+        Assert.Equal("Shift+Backspace", undo.ToStorageString());
+
+        Assert.True(Hotkey.TryParse("Shift+Backspace", out var parsed));
+        Assert.Equal(undo, parsed);
+    }
+
+    [Theory]
+    [InlineData(0x41)] // A
+    [InlineData(0x39)] // 9
+    [InlineData(0x20)] // Space
+    public void ShiftPlusACharacterKey_IsRejected(int virtualKey)
+    {
+        // Would hijack ordinary typing (Shift+A must stay "A").
+        Assert.False(new Hotkey(HotkeyModifiers.Shift, virtualKey).IsValid);
+    }
+
+    [Theory]
+    [InlineData(0x2E, "Delete")]
+    [InlineData(0x24, "Home")]
+    [InlineData(0x25, "Left")]
+    [InlineData(0x1B, "Escape")]
+    public void NonCharacterKeys_RoundTrip(int virtualKey, string name)
+    {
+        var hk = new Hotkey(HotkeyModifiers.Shift, virtualKey);
+
+        Assert.Equal($"Shift+{name}", hk.ToStorageString());
+        Assert.True(Hotkey.TryParse(hk.ToStorageString(), out var parsed));
+        Assert.Equal(hk, parsed);
+    }
+
+    [Fact]
     public void ToStorageString_FormatsModifiersAndKey()
     {
         var hk = new Hotkey(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x4C); // L

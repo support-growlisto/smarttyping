@@ -19,9 +19,26 @@ public enum HotkeyModifiers
 /// </summary>
 public readonly record struct Hotkey(HotkeyModifiers Modifiers, int VirtualKey)
 {
-    /// <summary>True if at least one non-Shift modifier is present (so it won't hijack plain typing).</summary>
+    /// <summary>
+    /// True when the combination cannot hijack plain typing: either it carries a non-Shift modifier,
+    /// or it is Shift plus a key that produces no character (Backspace, Delete, F-keys, arrows…).
+    /// The latter is what allows the RightLang-style <c>Shift+Backspace</c> undo.
+    /// </summary>
     public bool IsValid =>
-        VirtualKey != 0 && (Modifiers & (HotkeyModifiers.Ctrl | HotkeyModifiers.Alt | HotkeyModifiers.Win)) != 0;
+        VirtualKey != 0 &&
+        ((Modifiers & (HotkeyModifiers.Ctrl | HotkeyModifiers.Alt | HotkeyModifiers.Win)) != 0 ||
+         (Modifiers.HasFlag(HotkeyModifiers.Shift) && ProducesNoCharacter(VirtualKey)));
+
+    /// <summary>Keys that never insert text, so Shift alone is a safe modifier for them.</summary>
+    private static bool ProducesNoCharacter(int virtualKey) => virtualKey switch
+    {
+        0x08 => true,                    // Backspace
+        0x1B => true,                    // Escape
+        0x2D or 0x2E => true,            // Insert, Delete
+        >= 0x21 and <= 0x28 => true,     // PageUp/PageDown/End/Home/arrows
+        >= 0x70 and <= 0x87 => true,     // F1–F24
+        _ => false
+    };
 
     public string ToStorageString()
     {
@@ -72,14 +89,33 @@ public readonly record struct Hotkey(HotkeyModifiers Modifiers, int VirtualKey)
         return true;
     }
 
-    private static string KeyName(int vk) => vk switch
+    /// <summary>Named non-character keys, so they round-trip through <see cref="ToStorageString"/>.</summary>
+    private static readonly (int Vk, string Name)[] NamedKeys =
     {
-        >= 0x41 and <= 0x5A => ((char)vk).ToString(),          // A-Z
-        >= 0x30 and <= 0x39 => ((char)vk).ToString(),          // 0-9
-        0x20 => "Space",
-        >= 0x70 and <= 0x7B => "F" + (vk - 0x6F),              // F1-F12
-        _ => "0x" + vk.ToString("X2", CultureInfo.InvariantCulture)
+        (0x08, "Backspace"), (0x1B, "Escape"), (0x2D, "Insert"), (0x2E, "Delete"),
+        (0x21, "PageUp"), (0x22, "PageDown"), (0x23, "End"), (0x24, "Home"),
+        (0x25, "Left"), (0x26, "Up"), (0x27, "Right"), (0x28, "Down")
     };
+
+    private static string KeyName(int vk)
+    {
+        foreach (var (named, name) in NamedKeys)
+        {
+            if (named == vk)
+            {
+                return name;
+            }
+        }
+
+        return vk switch
+        {
+            >= 0x41 and <= 0x5A => ((char)vk).ToString(),          // A-Z
+            >= 0x30 and <= 0x39 => ((char)vk).ToString(),          // 0-9
+            0x20 => "Space",
+            >= 0x70 and <= 0x7B => "F" + (vk - 0x6F),              // F1-F12
+            _ => "0x" + vk.ToString("X2", CultureInfo.InvariantCulture)
+        };
+    }
 
     private static bool TryParseKey(string name, out int vk)
     {
@@ -98,6 +134,15 @@ public readonly record struct Hotkey(HotkeyModifiers Modifiers, int VirtualKey)
         {
             vk = 0x20;
             return true;
+        }
+
+        foreach (var (named, keyName) in NamedKeys)
+        {
+            if (string.Equals(name, keyName, StringComparison.OrdinalIgnoreCase))
+            {
+                vk = named;
+                return true;
+            }
         }
 
         if (name.Length is 2 or 3 && (name[0] is 'F' or 'f')

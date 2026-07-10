@@ -118,7 +118,8 @@ public sealed class SettingsService
             [HotkeyAction.Expand] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x45),  // E
             [HotkeyAction.Picker] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x20),  // Space
             [HotkeyAction.Capture] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x4E), // N
-            [HotkeyAction.AiImprove] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x49) // I
+            [HotkeyAction.AiImprove] = new(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, 0x49), // I
+            [HotkeyAction.UndoCorrection] = new(HotkeyModifiers.Shift, 0x08)                    // Shift+Backspace
         };
 
     /// <summary>Returns the effective hotkey for each action (saved value or the default).</summary>
@@ -147,7 +148,8 @@ public sealed class SettingsService
             [HotkeyAction.Expand] = SettingKeys.HotkeyExpand,
             [HotkeyAction.Picker] = SettingKeys.HotkeyPicker,
             [HotkeyAction.Capture] = SettingKeys.HotkeyCapture,
-            [HotkeyAction.AiImprove] = SettingKeys.HotkeyAiImprove
+            [HotkeyAction.AiImprove] = SettingKeys.HotkeyAiImprove,
+            [HotkeyAction.UndoCorrection] = SettingKeys.HotkeyUndoCorrection
         };
 
     private async Task<bool> GetBoolAsync(string key, bool defaultValue)

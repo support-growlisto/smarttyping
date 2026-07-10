@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
+using SmartTyping.Application.Abstractions;
 using SmartTyping.Infrastructure.Language;
 using Xunit;
 
@@ -8,9 +9,28 @@ namespace SmartTyping.IntegrationTests;
 /// <summary>Exercises the real embedded word lists, not a stub.</summary>
 public sealed class EmbeddedLexiconTests
 {
-    private static EmbeddedLexicon LoadedLexicon()
+    /// <summary>In-memory stand-in for the learned-word table.</summary>
+    private sealed class FakeLearnedWords : ILearnedWordRepository
     {
-        var lexicon = new EmbeddedLexicon(NullLogger<EmbeddedLexicon>.Instance);
+        public List<LearnedWord> Words { get; } = new();
+
+        public Task<IReadOnlyList<LearnedWord>> GetAllAsync() =>
+            Task.FromResult<IReadOnlyList<LearnedWord>>(Words.ToList());
+
+        public Task AddAsync(LearnedWord word, DateTime learnedUtc)
+        {
+            if (!Words.Contains(word))
+            {
+                Words.Add(word);
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    private static EmbeddedLexicon LoadedLexicon(ILearnedWordRepository? learned = null)
+    {
+        var lexicon = new EmbeddedLexicon(learned ?? new FakeLearnedWords(), NullLogger<EmbeddedLexicon>.Instance);
 
         // Loading runs on a background thread; give it a bounded wait rather than sleeping blindly.
         var clock = Stopwatch.StartNew();
@@ -48,4 +68,41 @@ public sealed class EmbeddedLexiconTests
     [InlineData("soy'lnv")] // หนังสือ
     [InlineData("mflvb")]   // ทดสอบ
     public void LatinGibberish_IsNotAnEnglishWord(string word) => Assert.False(LoadedLexicon().IsEnglishWord(word));
+
+    [Fact]
+    public async Task LearnedWord_IsRecognisedImmediately_AndPersisted()
+    {
+        var store = new FakeLearnedWords();
+        var lexicon = LoadedLexicon(store);
+
+        Assert.False(lexicon.IsEnglishWord("soy'lnv"));
+
+        lexicon.Learn("soy'lnv", isThai: false);
+
+        // Visible to the hook thread straight away, without waiting for the write.
+        Assert.True(lexicon.IsEnglishWord("soy'lnv"));
+
+        // ...and it reaches the repository (persisted on a background task).
+        var clock = Stopwatch.StartNew();
+        while (store.Words.Count == 0 && clock.Elapsed < TimeSpan.FromSeconds(5))
+        {
+            await Task.Delay(20);
+        }
+
+        Assert.Equal(new LearnedWord("soy'lnv", false), Assert.Single(store.Words));
+    }
+
+    [Fact]
+    public void LearnedWords_AreLoadedOnStartup()
+    {
+        var store = new FakeLearnedWords();
+        store.Words.Add(new LearnedWord("มั่ง", true));
+        store.Words.Add(new LearnedWord("zzqq", false));
+
+        var lexicon = LoadedLexicon(store);
+
+        Assert.True(lexicon.IsThaiWord("มั่ง"));
+        Assert.True(lexicon.IsEnglishWord("zzqq"));
+        Assert.False(lexicon.IsThaiWord("zzqq")); // learning is per-language
+    }
 }

@@ -79,6 +79,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+## [0.3.0]
+
+### Undo a correction — and it learns from it
+`Shift+Backspace` right after an automatic layout correction puts back exactly what you typed,
+restores your keyboard layout, **and remembers the word so it is never corrected again**. The two
+features are the same mechanism: undoing is how you teach the app.
+
+Learning needs no new logic in the decider — it drops straight into the existing veto:
+
+- corrected latin → Thai? the latin joins the **English** vocabulary → the "not an English word"
+  veto now blocks it.
+- corrected Thai → English? the Thai that was on screen joins the **Thai** vocabulary → the "not a
+  Thai word" veto now blocks it.
+
+Learned words persist in a `learned_words` table and load with the dictionaries at startup. This is
+what makes names, jargon and brand words usable — a fixed dictionary can never know them.
+
+The undo binding is guarded so it cannot break ordinary typing:
+
+- the hook only claims the keystroke while a correction is genuinely the last thing that happened —
+  any other key, or a mouse click, disarms it, so `Shift+Backspace` keeps deleting characters normally;
+- when it does fire, the keystroke is **swallowed**, so the app never receives a stray Backspace on
+  top of the restored text;
+- a bare modifier press does not disarm it (Shift goes down before `Shift+Backspace`).
+
+`Hotkey.IsValid` previously demanded Ctrl/Alt/Win. It now also accepts Shift plus a key that types
+nothing (Backspace, Delete, F-keys, arrows…), so `Shift+Backspace` is bindable while `Shift+A` is
+still rejected. Fixed a latent round-trip bug while there: keys such as Backspace serialized as
+`0x08` and could not be parsed back, so a rebind would silently revert to the default.
+
 ## [0.2.0]
 
 ### Layout correction is now decided by dictionary, not by character shapes

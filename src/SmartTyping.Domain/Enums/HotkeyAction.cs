@@ -16,5 +16,11 @@ public enum HotkeyAction
     Capture,
 
     /// <summary>Improve the selected text with AI.</summary>
-    AiImprove
+    AiImprove,
+
+    /// <summary>
+    /// Undo the last automatic layout correction and remember the word, so it is never corrected
+    /// again. Default Shift+Backspace.
+    /// </summary>
+    UndoCorrection
 }

@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddTransient<ISnippetRepository, SnippetRepository>();
         services.AddTransient<ICategoryRepository, CategoryRepository>();
         services.AddTransient<ISettingsRepository, SettingsRepository>();
+        services.AddTransient<ILearnedWordRepository, LearnedWordRepository>();
 
         // Time.
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();

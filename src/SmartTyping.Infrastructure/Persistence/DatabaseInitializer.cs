@@ -45,6 +45,14 @@ public sealed class DatabaseInitializer
             Key   TEXT PRIMARY KEY,
             Value TEXT NOT NULL
         );
+
+        -- Words the user taught us by undoing a correction of them.
+        CREATE TABLE IF NOT EXISTS learned_words (
+            Word       TEXT    NOT NULL,
+            IsThai     INTEGER NOT NULL,
+            LearnedUtc TEXT    NOT NULL,
+            PRIMARY KEY (Word, IsThai)
+        );
         """;
 
     private readonly ISqlConnectionFactory _factory;

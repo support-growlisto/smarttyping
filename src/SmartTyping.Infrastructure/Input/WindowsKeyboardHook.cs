@@ -39,6 +39,10 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     private string _lastSuggestedWord = string.Empty;
     private IntPtr _lastForeground = IntPtr.Zero;
 
+    // True from the moment a correction is applied until the user types anything else. Guards the
+    // undo hotkey so it only fires when the correction really is the last thing that happened.
+    private volatile bool _undoArmed;
+
     public WindowsKeyboardHook(ILogger<WindowsKeyboardHook> logger, IKeyboardLayoutConverter converter, LayoutDecider decider)
     {
         _logger = logger;
@@ -63,6 +67,8 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     public event EventHandler<LayoutCorrection>? LayoutAutoCorrectRequested;
 
     public event EventHandler<WordBoundary>? SnippetWordCompleted;
+
+    public event EventHandler? UndoCorrectionRequested;
 
     public bool SuggestionsEnabled { get; set; }
 
@@ -121,12 +127,15 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     {
         try
         {
-            if (nCode >= 0 && _wordBuffer.Length > 0)
+            if (nCode >= 0)
             {
                 var msg = (int)wParam;
                 if (msg is NativeMethods.WM_LBUTTONDOWN or NativeMethods.WM_RBUTTONDOWN or NativeMethods.WM_MBUTTONDOWN)
                 {
                     _wordBuffer.Clear();
+
+                    // The caret moved, so the corrected text is no longer behind it.
+                    _undoArmed = false;
                 }
             }
         }
@@ -160,12 +169,37 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                 var matched = false;
                 foreach (var (action, hotkey) in _bindings)
                 {
-                    if (hotkey.VirtualKey == vk && hotkey.Modifiers == mods)
+                    if (hotkey.VirtualKey != vk || hotkey.Modifiers != mods)
                     {
-                        Raise(EventFor(action));
-                        matched = true;
-                        break;
+                        continue;
                     }
+
+                    if (action == HotkeyAction.UndoCorrection)
+                    {
+                        // Only take the key when there is a correction to undo — otherwise the undo
+                        // binding (Shift+Backspace by default) would stop deleting characters.
+                        if (!_undoArmed)
+                        {
+                            break;
+                        }
+
+                        _undoArmed = false;
+                        Raise(UndoCorrectionRequested);
+
+                        // Swallow it: the app must not also receive the Backspace.
+                        return 1;
+                    }
+
+                    Raise(EventFor(action));
+                    matched = true;
+                    break;
+                }
+
+                // Any real keystroke other than a bare modifier means the correction is no longer the
+                // last thing that happened, so undoing it would rewrite the wrong text.
+                if (!matched && !IsModifierKey(vk))
+                {
+                    _undoArmed = false;
                 }
 
                 // Track plain typing for as-you-type features (layout hint / auto-expand). Only when a
@@ -268,6 +302,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
         _lastSuggestedWord = word;
         _wordBuffer.Clear();
+        _undoArmed = true;
         ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
     }
 
@@ -362,6 +397,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             }
 
             _lastSuggestedWord = word;
+            _undoArmed = true;
             ThreadPool.QueueUserWorkItem(_ => correct!.Invoke(this, payload));
             return;
         }
@@ -431,6 +467,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         HotkeyAction.Picker => PickerHotkeyPressed,
         HotkeyAction.Capture => CaptureHotkeyPressed,
         HotkeyAction.AiImprove => AiImproveHotkeyPressed,
+        HotkeyAction.UndoCorrection => UndoCorrectionRequested,
         _ => null
     };
 
@@ -451,6 +488,12 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     }
 
     private static bool IsDown(int vk) => (NativeMethods.GetAsyncKeyState(vk) & 0x8000) != 0;
+
+    // A modifier press alone must not disarm the undo — Shift goes down before Shift+Backspace.
+    private static bool IsModifierKey(int vk) => vk is
+        NativeMethods.VK_SHIFT or NativeMethods.VK_CONTROL or NativeMethods.VK_MENU or
+        NativeMethods.VK_LWIN or NativeMethods.VK_RWIN or
+        0xA0 or 0xA1 or 0xA2 or 0xA3 or 0xA4 or 0xA5; // L/R Shift, Ctrl, Alt
 
     public void Dispose() => Stop();
 }

@@ -91,7 +91,8 @@ public sealed class SettingsViewModel : ObservableObject
             NewRow(HotkeyAction.Expand, loc["Settings_ExpandSnippet"]),
             NewRow(HotkeyAction.Picker, loc["Settings_Picker"]),
             NewRow(HotkeyAction.Capture, loc["Settings_Capture"]),
-            NewRow(HotkeyAction.AiImprove, loc["Settings_AiImprove"])
+            NewRow(HotkeyAction.AiImprove, loc["Settings_AiImprove"]),
+            NewRow(HotkeyAction.UndoCorrection, loc["Settings_UndoCorrection"])
         };
         RefreshHotkeyRows();
     }
