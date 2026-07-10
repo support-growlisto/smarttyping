@@ -24,12 +24,16 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     private readonly IKeyboardLayoutConverter _converter;
     private readonly LayoutDecider _decider;
     private readonly IForegroundApp _foregroundApp;
+    private readonly ICaretContext _caret;
 
     // Keep the delegates alive for the lifetime of the hooks (prevents GC of the callbacks).
     private readonly NativeMethods.LowLevelKeyboardProc _proc;
     private readonly NativeMethods.LowLevelKeyboardProc _mouseProc;
+    private readonly NativeMethods.WinEventProc _focusProc;
     private IntPtr _hookHandle = IntPtr.Zero;
     private IntPtr _mouseHookHandle = IntPtr.Zero;
+    private IntPtr _focusHookHandle = IntPtr.Zero;
+    private IntPtr _foregroundHookHandle = IntPtr.Zero;
 
     // Current action→hotkey bindings (defaults until UpdateBindings is called). Volatile swap.
     private IReadOnlyDictionary<HotkeyAction, Hotkey> _bindings = SettingsService.DefaultHotkeys;
@@ -41,6 +45,30 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     private const int MaxTrackedWordLength = 32;
 
     private readonly StringBuilder _wordBuffer = new(MaxTrackedWordLength);
+
+    // What the current run has actually put on screen. Under a latin layout this is the same as
+    // _wordBuffer; under the Thai layout the keys produce Thai, and a keystroke that would produce an
+    // impossible sequence is swallowed (see ThaiInput) so that it appears in no application at all.
+    // This — not a prediction — is what a correction deletes.
+    private readonly StringBuilder _onScreen = new(MaxTrackedWordLength);
+
+    // Whether we saw the character that precedes the run: true when the run began at a delimiter we
+    // typed, which hosts no Thai mark. After a mouse click, a navigation key or a window switch the
+    // caret sits after a character we never watched, and _precedingProbed answers for it instead.
+    private bool _precedingKnown;
+
+    // What UI Automation says sits before the caret: -1 while unknown, otherwise the character (0 when
+    // the caret is at the very start). Written by the probe on a thread-pool thread, read by the hook.
+    private const int PrecedingUnknown = -1;
+    private volatile int _precedingProbed = PrecedingUnknown;
+
+    // How long the hook may wait for an in-flight probe. Windows drops a low-level hook that takes
+    // longer than LowLevelHooksTimeout (300 ms by default) to return, so this stays far below it.
+    private const int PrecedingWaitMs = 60;
+    private const int PrecedingPollMs = 5;
+
+    // Invalidates a probe whose answer arrived after the caret moved again.
+    private int _precedingGeneration;
 
     // Set when a run outgrows the buffer. We can no longer say how many characters sit behind the
     // caret, so acting on the tail would replace text at the wrong place. Tracking stays off until
@@ -58,14 +86,17 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         ILogger<WindowsKeyboardHook> logger,
         IKeyboardLayoutConverter converter,
         LayoutDecider decider,
-        IForegroundApp foregroundApp)
+        IForegroundApp foregroundApp,
+        ICaretContext caret)
     {
         _logger = logger;
         _converter = converter;
         _decider = decider;
         _foregroundApp = foregroundApp;
+        _caret = caret;
         _proc = HookCallback;
         _mouseProc = MouseCallback;
+        _focusProc = FocusCallback;
     }
 
     public event EventHandler? ConversionHotkeyPressed;
@@ -124,6 +155,26 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         {
             _logger.LogWarning("Failed to install the low-level mouse hook; as-you-type buffer won't reset on click.");
         }
+
+        // Watch focus changes so the caret's surroundings are read the moment it moves — long before
+        // the first keystroke of the next word, which is when we must decide about that keystroke.
+        //
+        // Two narrow hooks, not one wide range: SetWinEventHook(min, max) subscribes to *every* event id
+        // in between, and 0x0003..0x8005 spans hundreds of them (window creation, every location change).
+        const uint flags = NativeMethods.WINEVENT_OUTOFCONTEXT | NativeMethods.WINEVENT_SKIPOWNPROCESS;
+
+        _foregroundHookHandle = NativeMethods.SetWinEventHook(
+            NativeMethods.EVENT_SYSTEM_FOREGROUND, NativeMethods.EVENT_SYSTEM_FOREGROUND,
+            IntPtr.Zero, _focusProc, 0, 0, flags);
+
+        _focusHookHandle = NativeMethods.SetWinEventHook(
+            NativeMethods.EVENT_OBJECT_FOCUS, NativeMethods.EVENT_OBJECT_FOCUS,
+            IntPtr.Zero, _focusProc, 0, 0, flags);
+
+        if (_focusHookHandle == IntPtr.Zero || _foregroundHookHandle == IntPtr.Zero)
+        {
+            _logger.LogWarning("Failed to watch focus changes; the first word after a click may not be corrected.");
+        }
     }
 
     public void Stop()
@@ -139,6 +190,48 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             NativeMethods.UnhookWindowsHookEx(_mouseHookHandle);
             _mouseHookHandle = IntPtr.Zero;
         }
+
+        if (_focusHookHandle != IntPtr.Zero)
+        {
+            NativeMethods.UnhookWinEvent(_focusHookHandle);
+            _focusHookHandle = IntPtr.Zero;
+        }
+
+        if (_foregroundHookHandle != IntPtr.Zero)
+        {
+            NativeMethods.UnhookWinEvent(_foregroundHookHandle);
+            _foregroundHookHandle = IntPtr.Zero;
+        }
+    }
+
+    // Focus moved to another control or window: the word we were tracking is gone, and the caret now
+    // sits after a character we have never seen. Find out what it is while the user is still reaching
+    // for the keyboard.
+    private void FocusCallback(IntPtr hook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint thread, uint time)
+    {
+        try
+        {
+            if (eventType is not (NativeMethods.EVENT_SYSTEM_FOREGROUND or NativeMethods.EVENT_OBJECT_FOCUS))
+            {
+                return;
+            }
+
+            // idObject == OBJID_CLIENT(-4) or OBJID_WINDOW(0); anything else is a menu, a caret, a
+            // scrollbar — not the thing that owns the text.
+            if (idObject is not (0 or -4))
+            {
+                return;
+            }
+
+            ResetWord(precedingKnown: false);
+            _lastSuggestedWord = string.Empty;
+            _lastForeground = NativeMethods.GetForegroundWindow();
+            _undoArmed = false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Focus-change callback failed.");
+        }
     }
 
     // Any mouse click can move the caret without a keystroke — invalidate the tracked word so we
@@ -152,10 +245,16 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                 var msg = (int)wParam;
                 if (msg is NativeMethods.WM_LBUTTONDOWN or NativeMethods.WM_RBUTTONDOWN or NativeMethods.WM_MBUTTONDOWN)
                 {
-                    ResetWord();
+                    ResetWord(precedingKnown: false);
 
                     // The caret moved, so the corrected text is no longer behind it.
                     _undoArmed = false;
+                }
+                else if (msg == NativeMethods.WM_LBUTTONUP)
+                {
+                    // The button-down probe read the caret where it used to be — the app moves it while
+                    // handling the click. Ask again now that it has landed.
+                    ProbePrecedingCharacter();
                 }
             }
         }
@@ -227,7 +326,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                 // as raw input. Explicit hotkeys above still work — those are a deliberate act.
                 if (Blocklist.IsBlocked(_foregroundApp.GetProcessName()))
                 {
-                    ResetWord();
+                    ResetWord(precedingKnown: false);
                     _undoArmed = false;
                     return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
                 }
@@ -242,7 +341,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                     var foreground = NativeMethods.GetForegroundWindow();
                     if (foreground != _lastForeground)
                     {
-                        ResetWord();
+                        ResetWord(precedingKnown: false);
                         _lastSuggestedWord = string.Empty;
                         _lastForeground = foreground;
                     }
@@ -295,20 +394,36 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
                 // because the user typed a trigger deliberately.
                 var swallow = RaiseSnippetWordCompleted(completed, vk) ||
                               EvaluateWord(completed, atSpace: vk == NativeMethods.VK_SPACE);
-                ResetWord();
+
+                // The delimiter is now the character before the next run, and it hosts no Thai mark.
+                ResetWord(precedingKnown: true);
                 return swallow;
             case NativeMethods.VK_BACK:
-                if (!_wordAbandoned && _wordBuffer.Length > 0)
+                if (_wordAbandoned || _wordBuffer.Length == 0)
+                {
+                    return false;
+                }
+
+                if (_wordBuffer.Length == _onScreen.Length)
                 {
                     _wordBuffer.Length--;
+                    _onScreen.Length--;
                 }
+                else
+                {
+                    // Some keystroke of this run was swallowed, so the buffer and the screen no longer
+                    // line up character for character and we cannot say which one the Backspace removed.
+                    ResetWord(precedingKnown: false);
+                }
+
                 return false;
         }
 
         var c = VkToChar(vk, shift);
         if (c == '\0')
         {
-            ResetWord(); // navigation / other keys break the current word
+            // Navigation / other keys break the current word, and move the caret somewhere we cannot see.
+            ResetWord(precedingKnown: false);
             return false;
         }
 
@@ -322,26 +437,137 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             // Truncating here would desynchronise the buffer from the document: we would believe the
             // word is 32 characters long while the caret has many more behind it, and a replacement
             // would backspace over whatever happened to be there. Give up on this run instead.
-            _wordBuffer.Clear();
-            _wordAbandoned = true;
-            _undoArmed = false;
+            AbandonWord();
             return false;
         }
 
+        // What this key will put on screen: itself under a latin layout, its Thai counterpart otherwise.
+        var thaiLayout = NativeMethods.ForegroundLayoutIsThai();
+        var produced = thaiLayout
+            ? _converter.Convert(c.ToString(), ConversionDirection.EnglishToThai)
+            : c.ToString();
+
+        if (thaiLayout && produced.Length == 1)
+        {
+            var previous = PrecedingCharacter();
+            if (previous is null)
+            {
+                // The caret landed somewhere we never watched and UI Automation could not tell us what
+                // sits behind it. This key might attach to a consonant already in the document, or float
+                // free — we can neither swallow it nor count it. Stop tracking until the next word break.
+                AbandonWord();
+                return false;
+            }
+
+            if (!ThaiInput.Accepts(previous.Value, produced[0]))
+            {
+                // The mark has nothing to attach to. A Win32 edit control refuses it; a control that
+                // draws its own text accepts it. Swallow it so that neither does — and keep the letter in
+                // the buffer, because it is still part of the word the user meant to type.
+                _wordBuffer.Append(c);
+                return true;
+            }
+        }
+
         _wordBuffer.Append(c);
-        return TryExpandCompletedTrigger() || TryCorrectLayoutMidWord();
+
+        // The trigger keystroke is decided before it lands: if it fires a replacement we swallow it, so
+        // _onScreen must still describe the document as the handler will find it.
+        if (TryExpandCompletedTrigger(produced) || TryCorrectLayoutMidWord(produced))
+        {
+            return true;
+        }
+
+        _onScreen.Append(produced);
+        return false;
+    }
+
+    /// <summary>
+    /// The character the next keystroke would attach to: the last one this run put on screen, or — for
+    /// the run's first keystroke — whatever precedes it in the document. Null when that is unknowable.
+    /// </summary>
+    private char? PrecedingCharacter()
+    {
+        if (_onScreen.Length > 0)
+        {
+            return _onScreen[^1];
+        }
+
+        if (_precedingKnown)
+        {
+            return '\0'; // the delimiter we typed; no Thai mark can attach to it
+        }
+
+        // The probe was started when focus moved, so it has normally answered long ago. If the user was
+        // quicker than UI Automation, give it a moment — but only a moment: Windows unhooks a low-level
+        // hook that takes too long to return, and that would silence every feature at once.
+        for (var waited = 0; waited < PrecedingWaitMs; waited += PrecedingPollMs)
+        {
+            if (_precedingProbed != PrecedingUnknown)
+            {
+                break;
+            }
+
+            Thread.Sleep(PrecedingPollMs);
+        }
+
+        var probed = _precedingProbed;
+        return probed == PrecedingUnknown ? null : (char)probed;
+    }
+
+    /// <summary>Stops tracking until the next real word break, when the caret is no longer accounted for.</summary>
+    private void AbandonWord()
+    {
+        _wordBuffer.Clear();
+        _onScreen.Clear();
+        _wordAbandoned = true;
+        _precedingKnown = false;
+        _undoArmed = false;
     }
 
     /// <summary>Forgets the current word — the only safe state once we lose track of the caret.</summary>
-    private void ResetWord()
+    /// <param name="precedingKnown">
+    /// True when we saw what sits before the new run — a delimiter we just typed, which no Thai mark can
+    /// attach to. False when the caret moved somewhere we cannot see (a click, a navigation key, another
+    /// window), in which case the run's first keystroke might legitimately attach to a consonant already
+    /// in the document.
+    /// </param>
+    private void ResetWord(bool precedingKnown)
     {
         _wordBuffer.Clear();
+        _onScreen.Clear();
         _wordAbandoned = false;
+        _precedingKnown = precedingKnown;
+
+        if (!precedingKnown)
+        {
+            ProbePrecedingCharacter();
+        }
+    }
+
+    /// <summary>
+    /// Asks UI Automation what sits before the caret, on a thread-pool thread — the call can take tens
+    /// of milliseconds and Windows unhooks a low-level hook that is slow to return. The answer usually
+    /// lands long before the user's next keystroke; if it does not, the run is abandoned instead.
+    /// </summary>
+    private void ProbePrecedingCharacter()
+    {
+        _precedingProbed = PrecedingUnknown;
+        var generation = Interlocked.Increment(ref _precedingGeneration);
+
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            var found = _caret.GetCharacterBeforeCaret();
+            if (found is char c && Volatile.Read(ref _precedingGeneration) == generation)
+            {
+                _precedingProbed = c;
+            }
+        });
     }
 
     // Correct wrong-layout Thai the moment it is recognisable, without waiting for a space. The
     // handler also switches the input language to Thai, so the remainder of the word types correctly.
-    private bool TryCorrectLayoutMidWord()
+    private bool TryCorrectLayoutMidWord(string swallowed)
     {
         if (!SuggestionsEnabled || !AutoApplySuggestions || !ImmediateLayoutCorrect || _wordBuffer.Length < 3)
         {
@@ -360,7 +586,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             return false;
         }
 
-        var payload = BuildCorrection(word, string.Empty);
+        var payload = BuildCorrection(word, string.Empty, swallowed);
         if (payload is null)
         {
             return false;
@@ -368,6 +594,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
         _lastSuggestedWord = word;
         _wordBuffer.Clear();
+        _onScreen.Clear();
         _undoArmed = true;
         ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
         return true;
@@ -378,54 +605,22 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
     /// correcting, in either direction. Both directions are settled by dictionary lookup — see
     /// <see cref="LayoutDecider"/>. Returns null when nothing to do.
     ///
-    /// <para>Also counts what the document is actually holding. The keystroke that triggered us is
-    /// swallowed, so it is not there: mid-word that is the word's last character, at a boundary it is
-    /// the delimiter. And under a Thai layout the keys that reached the document produced Thai, some of
-    /// which Windows refused outright — so the count is the length of the *filtered* Thai, not of the
-    /// latin the user pressed.</para>
+    /// <para>The count comes from <see cref="_onScreen"/>, which records what this run actually put in
+    /// the document — never a prediction. The keystroke that triggered us has not landed (we swallow it),
+    /// so it is not in that count; <paramref name="swallowed"/> is what it would have typed.</para>
     /// </summary>
-    private LayoutCorrection? BuildCorrection(string word, string boundary)
+    private LayoutCorrection? BuildCorrection(string word, string boundary, string swallowed)
     {
-        var thaiLayout = NativeMethods.ForegroundLayoutIsThai();
-        var payload = _decider.Decide(word, thaiLayout, boundary);
-        if (payload is null)
-        {
-            return null;
-        }
-
-        var atBoundary = boundary.Length > 0;
-        var delivered = atBoundary ? word : word[..^1];
-
-        if (!thaiLayout)
-        {
-            return payload with
-            {
-                CharsToDelete = delivered.Length,
-                SwallowedText = atBoundary ? boundary : word[^1..]
-            };
-        }
-
-        // Filter is a left-to-right rejection of impossible sequences, so filtering a prefix of the
-        // word yields a prefix of filtering the whole word. The tail is what the swallowed key would
-        // have put on screen — sometimes nothing, when Windows would have rejected it too.
-        var onScreenFull = OnScreen(word);
-        var onScreenDelivered = atBoundary ? onScreenFull : OnScreen(delivered);
-
-        return payload with
-        {
-            CharsToDelete = onScreenDelivered.Length,
-            SwallowedText = atBoundary ? boundary : onScreenFull[onScreenDelivered.Length..]
-        };
+        var payload = _decider.Decide(word, NativeMethods.ForegroundLayoutIsThai(), boundary);
+        return payload is null
+            ? null
+            : payload with { CharsToDelete = _onScreen.Length, SwallowedText = swallowed };
     }
-
-    /// <summary>What the Thai layout actually leaves on screen for the given physical keys.</summary>
-    private string OnScreen(string typed) =>
-        ThaiInput.Filter(_converter.Convert(typed, ConversionDirection.EnglishToThai));
 
     // Expand the moment the typed text forms a complete trigger — no space needed. The predicate is
     // an in-memory lookup, and triggers that prefix a longer trigger are excluded from it (those
     // still expand on a space/tab delimiter instead).
-    private bool TryExpandCompletedTrigger()
+    private bool TryExpandCompletedTrigger(string swallowed)
     {
         if (!AutoExpandEnabled || _wordBuffer.Length < 2)
         {
@@ -445,11 +640,11 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             return false;
         }
 
+        // Empty delimiter: only the trigger itself is deleted and replaced. The keystroke that completed
+        // it is swallowed and never reached the document, so _onScreen already excludes it.
+        var payload = new WordBoundary(word, string.Empty, _onScreen.Length, swallowed);
         _wordBuffer.Clear();
-
-        // Empty delimiter: only the trigger itself is deleted and replaced. Its last character was
-        // swallowed and never reached the document, hence Length - 1.
-        var payload = new WordBoundary(word, string.Empty, word.Length - 1, word[^1..]);
+        _onScreen.Clear();
         ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
         return true;
     }
@@ -484,7 +679,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
             return false;
         }
 
-        var payload = new WordBoundary(word, boundary, word.Length, boundary);
+        var payload = new WordBoundary(word, boundary, _onScreen.Length, boundary);
         ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
         return true;
     }
@@ -504,7 +699,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         {
             var correct = LayoutAutoCorrectRequested;
             // The space that closed the word is swallowed with it and re-inserted after the fix.
-            var payload = correct is null ? null : BuildCorrection(word, " ");
+            var payload = correct is null ? null : BuildCorrection(word, " ", swallowed: " ");
             if (payload is null)
             {
                 return false;

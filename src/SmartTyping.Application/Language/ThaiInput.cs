@@ -1,13 +1,17 @@
 namespace SmartTyping.Application.Language;
 
 /// <summary>
-/// Models the input validation the Windows Thai (Kedmanee) layout applies: a keystroke that would
-/// produce a structurally impossible sequence — a tone mark or attached vowel with nothing to attach
-/// to — is silently rejected and never reaches the document.
+/// Which Thai (Kedmanee) keystrokes produce a structurally possible sequence: a tone mark or an attached
+/// vowel needs something to attach to.
 ///
-/// <para>This matters for the automatic correction. When the user types <c>hello</c> with the Thai
-/// layout active, the keys map to <c>้ำสสน</c> but only <c>สสน</c> is actually inserted. Deleting five
-/// characters to fix it would destroy two characters of whatever came before.</para>
+/// <para>Whether the <i>application</i> enforces this is not up to Windows — it is up to the text
+/// control. Measured with the same keys (<c>hello</c>, which maps to <c>้ำสสน</c>): a Win32 EDIT control
+/// (WinForms, Notepad) drops the leading tone and sara-am and inserts only <c>สสน</c>, while a control
+/// that renders text itself (WPF, and by extension Chrome and Electron) inserts all five characters.</para>
+///
+/// <para>So the hook cannot <i>predict</i> how many characters a correction must delete. Instead it
+/// <i>enforces</i> this rule: a keystroke that <see cref="Accepts"/> rejects is swallowed before it
+/// reaches the application. Every app then shows the same thing, and the count is exact.</para>
 /// </summary>
 public static class ThaiInput
 {
@@ -37,6 +41,32 @@ public static class ThaiInput
     private static bool IsSaraAm(char c) => c is 'ำ';
 
     /// <summary>
+    /// Whether <paramref name="c"/> may follow <paramref name="previous"/> (use <c>'\0'</c> when nothing
+    /// precedes it). This is the per-character rule behind <see cref="Filter"/>, exposed so the keyboard
+    /// hook can apply it one keystroke at a time.
+    /// </summary>
+    public static bool Accepts(char previous, char c)
+    {
+        if (IsAttachedVowel(c))
+        {
+            return IsConsonant(previous);
+        }
+
+        if (IsStackedMark(c))
+        {
+            return IsConsonant(previous) || IsAttachedVowel(previous);
+        }
+
+        if (IsSaraAm(c))
+        {
+            return IsConsonant(previous) || IsAttachedVowel(previous) || IsStackedMark(previous);
+        }
+
+        // Consonants, leading and spacing vowels, the free marks, digits, punctuation, latin.
+        return true;
+    }
+
+    /// <summary>
     /// Returns the subsequence of <paramref name="thai"/> that the Thai layout would actually insert.
     /// Non-Thai characters pass through unchanged.
     /// </summary>
@@ -52,27 +82,7 @@ public static class ThaiInput
 
         foreach (var c in thai)
         {
-            bool accepted;
-
-            if (IsAttachedVowel(c))
-            {
-                accepted = IsConsonant(previous);
-            }
-            else if (IsStackedMark(c))
-            {
-                accepted = IsConsonant(previous) || IsAttachedVowel(previous);
-            }
-            else if (IsSaraAm(c))
-            {
-                accepted = IsConsonant(previous) || IsAttachedVowel(previous) || IsStackedMark(previous);
-            }
-            else
-            {
-                // Consonants, leading and spacing vowels, the free marks, digits, punctuation, latin.
-                accepted = true;
-            }
-
-            if (accepted)
+            if (Accepts(previous, c))
             {
                 kept.Append(c);
                 previous = c;

@@ -79,6 +79,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+## [Unreleased-0.6.1]
+
+### Fixed: `้ำ` left behind when correcting a word typed on the Thai layout
+
+Typing `hello` with the Thai layout on left `้ำhello` in Chrome, VS Code and any other modern app.
+
+Windows was never the one rejecting a floating tone mark — the *text control* was. Measured by typing
+the same keys into two controls with SmartTyping stopped: a Win32 EDIT control (WinForms, Notepad)
+inserts only `สสน`, while a control that renders its own text (WPF, and by extension Chrome and
+Electron) inserts all five characters of `้ำสสน`. `ThaiInput.Filter` predicted the first, so in the
+second we deleted three characters where five had landed, and the two stragglers survived the fix.
+
+The hook no longer predicts what the application kept. It **enforces** the rule instead: a keystroke
+that would produce an impossible sequence is swallowed before it reaches the application, so every app
+holds exactly the same text and the count is a fact rather than a guess.
+
+That raises a question the hook cannot answer alone. The very first keystroke after the caret moves
+somewhere we did not watch — a click, a navigation key, another window — may be a stray mark to
+suppress, or the mark that completes `พันธุ` into `พันธุ์`. Suppressing it either way would silently eat
+a keystroke the user meant. So the hook now asks **UI Automation** what sits before the caret, the
+moment focus changes (via a `WinEvent` hook, off the keyboard-hook thread) and long before the user
+types. When the answer never comes — an app with no text pattern — it tracks nothing rather than
+guessing, and no text is touched.
+
+Verified against the running app: `hello` on the Thai layout now yields `hello` in **both** a Win32 edit
+control and a WPF one; the thanthakhat typed straight after `พันธุ` completes the word; the same
+keystroke into an empty field, or after a space, is suppressed.
+
 ## [0.6.0]
 
 ### Changed: the hook now takes the keystroke that triggers a replacement

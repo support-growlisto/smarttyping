@@ -24,6 +24,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Reads the character before the caret in apps whose text Win32 cannot see (browsers, Electron). -->
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationTypes" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SmartTyping.Application\SmartTyping.Application.csproj" />
     <ProjectReference Include="..\SmartTyping.Domain\SmartTyping.Domain.csproj" />
     <ProjectReference Include="..\SmartTyping.Infrastructure\SmartTyping.Infrastructure.csproj" />

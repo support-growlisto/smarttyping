@@ -66,6 +66,11 @@ public partial class App : System.Windows.Application
         // UI-layer services.
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IPlaceholderPrompt, PlaceholderPromptService>();
+
+        // UI Automation ships with WPF, which only this project references — so the keyboard hook's
+        // "what is before the caret?" adapter is registered here rather than in Infrastructure.
+        services.AddSingleton<Application.Abstractions.ICaretContext, Services.UiAutomationCaretContext>();
+
         services.AddSingleton<TrayIconService>();
         services.AddSingleton<LanguageHotkeyCoordinator>();
         services.AddSingleton<SnippetExpansionCoordinator>();
