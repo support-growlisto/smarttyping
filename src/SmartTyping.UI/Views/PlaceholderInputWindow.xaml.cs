@@ -13,7 +13,13 @@ public partial class PlaceholderInputWindow : Window
         InitializeComponent();
         DataContext = viewModel;
         Icon = AppIcon.TryLoad();
-        Loaded += (_, _) => FocusFirstField();
+        Loaded += (_, _) =>
+        {
+            // Shown from a background process while the user is typing elsewhere: without this the fields
+            // cannot be typed into at all (see ForegroundActivator).
+            Services.ForegroundActivator.ForceActivate(this);
+            FocusFirstField();
+        };
     }
 
     private void OnInsertClick(object sender, RoutedEventArgs e) => DialogResult = true;

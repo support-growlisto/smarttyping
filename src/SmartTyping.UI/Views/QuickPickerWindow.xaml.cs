@@ -24,6 +24,10 @@ public partial class QuickPickerWindow : Window
 
         Loaded += async (_, _) =>
         {
+            // Being shown is not the same as having the keyboard. We are a background process when the
+            // hotkey fires, and Windows will not hand a background process the foreground just because it
+            // asked: the palette appeared over the user's app and every keystroke still went to that app.
+            ForegroundActivator.ForceActivate(this);
             SearchBox.Focus();
             await _viewModel.LoadAsync();
         };

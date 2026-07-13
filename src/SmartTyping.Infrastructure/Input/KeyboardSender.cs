@@ -151,9 +151,13 @@ internal static class KeyboardSender
 
     /// <summary>
     /// How many Left taps walk the caret from the end of <paramref name="text"/> back to
-    /// <paramref name="cursorOffset"/> (a snippet's <c>{cursor}</c> marker). A '\n' costs two caret
-    /// positions because the Enter we send inserts a CRLF; a '\r' is never typed and costs nothing.
-    /// Returns 0 when there is no marker.
+    /// <paramref name="cursorOffset"/> (a snippet's <c>{cursor}</c> marker), or 0 when there is no marker.
+    ///
+    /// <para>A line break costs <b>one</b> tap, not two. It is stored as CRLF — two characters — which is
+    /// why this used to count it twice, and why the caret of a multi-line snippet landed one place too far
+    /// back for every line break: at the end of the previous line instead of on the empty one. But Left is
+    /// a <i>caret</i> movement, and the caret steps over a line break in a single press. Measured against a
+    /// real text box, after the arithmetic said otherwise.</para>
     /// </summary>
     public static int LeftTapsFor(string text, int? cursorOffset)
     {
@@ -167,10 +171,10 @@ internal static class KeyboardSender
         {
             if (text[i] == '\r')
             {
-                continue;
+                continue; // never typed: the '\n' is what we send, as Enter
             }
 
-            taps += text[i] == '\n' ? 2 : 1;
+            taps++;
         }
 
         return taps;

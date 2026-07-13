@@ -81,6 +81,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: the quick picker opened, but you could not type in it
+
+Press Ctrl+Shift+Space and the palette appeared over your app — and every keystroke still went to your
+app. Windows will not let a background process take the foreground just because it asks, so the window was
+drawn on top with no keyboard at all. Measured: after the hotkey, the picker window existed (540×400) and
+the foreground was still Chrome.
+
+It now attaches its input queue to the foreground window's thread for the moment it takes to claim focus —
+what every launcher does. The same fix went to the `{input:…}` prompt, which pops up mid-expansion while
+you are typing somewhere else and had exactly the same problem.
+
+### Fixed: {cursor} in a multi-line snippet landed one line too high
+
+A line break is stored as CRLF — two characters — so the code walked the caret back over it twice. But Left
+is a caret movement, and the caret crosses a line break in a single press. A snippet of
+`Dear team,
+{cursor}
+Regards` left the caret at the end of "Dear team," instead of on the empty line.
+Measured against a real text box, after the arithmetic said otherwise.
+
 ### Added: the personal dictionary — the words no dictionary knows
 
 Names, jargon, and the deliberate misspellings people use with each other (`คับ`, `จ้าา`). These are the
