@@ -79,6 +79,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+## [0.6.3]
+
+### Added: the words you taught me are now visible — and removable
+
+Undoing a correction teaches the app that the word was right, and it stops correcting that word. That is
+the feature working as designed. What was not designed is that the teaching was **silent, permanent and
+invisible**: one Shift+Backspace and the word was never corrected again, in any application, with nothing
+on screen to say why.
+
+The symptom that reports it looks nothing like the cause. The word simply stops being corrected — so it
+reads as "the corrector is broken in this app", and then Shift+Backspace has no correction to undo and
+falls through as a plain Backspace, so it reads as "undo is broken too". Two bugs, neither of them real,
+one invisible cause.
+
+Settings now lists every word you have taught the app, with the language it was learned in, a **Forget**
+button on each and **Forget all** underneath. Forgetting reaches the database, so the correction comes
+back and stays back.
+
 ## [0.6.2]
 
 ### Changed: starting with Windows no longer opens a window

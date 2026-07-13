@@ -78,6 +78,16 @@ internal static class Strings
                 "Tray pop-ups after a conversion, expansion or AI edit. Turn off to work silently — the features still run.",
                 "ข้อความเด้งมุมจอหลังแปลงภาษา ขยาย snippet หรือ AI · ปิดได้เพื่อให้เงียบ ฟีเจอร์ยังทำงานปกติ"),
             ["Settings_BlockedApps"] = ("Never type in these apps:", "ห้ามพิมพ์แทนในแอปเหล่านี้:"),
+            ["Settings_LearnedWords"] = ("Words you taught me", "คำที่โปรแกรมจำไว้"),
+            ["Settings_LearnedWordsHint"] = (
+                "Undoing a correction teaches me that the word was right, and I stop correcting it — everywhere, for good. Remove a word here to start correcting it again.",
+                "ทุกครั้งที่คุณกดยกเลิกการแก้ (Shift+Backspace) โปรแกรมจะจำว่าคำนั้นถูกแล้ว และจะเลิกแก้คำนั้นตลอดไปในทุกแอป · ลบคำออกจากรายการนี้เพื่อให้กลับมาแก้อีกครั้ง"),
+            ["Settings_LearnedWordsEmpty"] = ("Nothing learned yet.", "ยังไม่มีคำที่จำไว้"),
+            ["Settings_ForgetWord"] = ("Forget", "ลืมคำนี้"),
+            ["Settings_ForgetAll"] = ("Forget all", "ลืมทั้งหมด"),
+            ["Settings_ForgetAllConfirm"] = (
+                "Forget every word you have taught me? Corrections for all of them start working again.",
+                "ลืมคำที่จำไว้ทั้งหมด? ทุกคำจะกลับมาถูกแก้อีกครั้ง"),
             ["Settings_BlockedAppsHint"] = (
                 "Comma-separated program names. The automatic features stay silent here — a terminal could run a stray character, a remote-desktop window sends keys to another machine, and games read raw input. Hotkeys still work. Leave empty to restore the defaults.",
                 "ชื่อโปรแกรมคั่นด้วยจุลภาค · ฟีเจอร์อัตโนมัติจะไม่ทำงานในแอปเหล่านี้ — terminal อาจรันคำสั่งจากตัวอักษรหลง, หน้าต่าง remote desktop ส่งปุ่มไปเครื่องอื่น, เกมอ่าน raw input · คีย์ลัดยังใช้ได้ · เว้นว่างเพื่อกลับไปใช้ค่าเริ่มต้น"),

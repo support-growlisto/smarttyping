@@ -26,6 +26,19 @@ public sealed class LayoutDeciderTests
         public bool IsEnglishWord(string word) => _english.Contains(word);
         public void Learn(string word, bool isThai) => (isThai ? _thai : _english).Add(word);
 
+        public IReadOnlyList<LearnedEntry> LearnedWords =>
+            _thai.Select(w => new LearnedEntry(w, true))
+                .Concat(_english.Select(w => new LearnedEntry(w, false)))
+                .ToList();
+
+        public void Forget(string word, bool isThai) => (isThai ? _thai : _english).Remove(word);
+
+        public void ForgetAll()
+        {
+            _thai.Clear();
+            _english.Clear();
+        }
+
         // Mirrors EmbeddedLexicon: Thai words are compared as the latin keys that type them.
         public bool IsNearThaiWord(string latinTyped, int budget) => _thai.Any(word =>
             KeyboardCost.Distance(latinTyped, Converter.Convert(word, ConversionDirection.ThaiToEnglish), budget) >= 0);
@@ -156,6 +169,36 @@ public sealed class LayoutDeciderTests
         // blocks the conversion for good.
         lexicon.Learn("soy'lnv", isThai: false);
         Assert.Null(decider.Decide("soy'lnv", thaiLayoutActive: false, boundary: ""));
+    }
+
+    // Learning is silent, permanent and invisible: one undo and that word is never corrected again, in
+    // any application, with nothing on screen to say why. Forgetting it must bring the correction back —
+    // that is what makes the learned-words list in Settings a real remedy rather than a cosmetic one.
+    [Fact]
+    public void ForgettingAWord_RestoresTheCorrection()
+    {
+        var lexicon = new FakeLexicon();
+        var decider = Create(lexicon);
+
+        lexicon.Learn("soy'lnv", isThai: false);
+        Assert.Null(decider.Decide("soy'lnv", thaiLayoutActive: false, boundary: ""));
+
+        lexicon.Forget("soy'lnv", isThai: false);
+        Assert.NotNull(decider.Decide("soy'lnv", thaiLayoutActive: false, boundary: ""));
+    }
+
+    [Fact]
+    public void ForgetAll_ClearsEveryLearnedWord_AndOnlyThose()
+    {
+        var lexicon = new FakeLexicon();
+        lexicon.Learn("soy'lnv", isThai: false);
+        lexicon.Learn("กขค", isThai: true);
+        Assert.Equal(2, lexicon.LearnedWords.Count(e => e.Word is "soy'lnv" or "กขค"));
+
+        lexicon.ForgetAll();
+
+        Assert.False(lexicon.IsEnglishWord("soy'lnv"));
+        Assert.False(lexicon.IsThaiWord("กขค"));
     }
 
     [Fact]

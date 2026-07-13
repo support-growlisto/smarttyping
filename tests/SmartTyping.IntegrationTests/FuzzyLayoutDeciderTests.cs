@@ -20,6 +20,10 @@ public sealed class FuzzyLayoutDeciderTests
             Task.FromResult<IReadOnlyList<LearnedWord>>([]);
 
         public Task AddAsync(LearnedWord word, DateTime learnedUtc) => Task.CompletedTask;
+
+        public Task RemoveAsync(LearnedWord word) => Task.CompletedTask;
+
+        public Task ClearAsync() => Task.CompletedTask;
     }
 
     private readonly ITestOutputHelper _output;

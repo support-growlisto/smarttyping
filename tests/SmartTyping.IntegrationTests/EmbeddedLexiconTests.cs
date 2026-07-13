@@ -27,6 +27,18 @@ public sealed class EmbeddedLexiconTests
 
             return Task.CompletedTask;
         }
+
+        public Task RemoveAsync(LearnedWord word)
+        {
+            Words.Remove(word);
+            return Task.CompletedTask;
+        }
+
+        public Task ClearAsync()
+        {
+            Words.Clear();
+            return Task.CompletedTask;
+        }
     }
 
     private static EmbeddedLexicon LoadedLexicon(ILearnedWordRepository? learned = null)

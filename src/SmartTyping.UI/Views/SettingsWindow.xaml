@@ -7,6 +7,10 @@
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         FontFamily="Segoe UI" FontSize="13"
         Background="{DynamicResource Brush.Window}" Foreground="{DynamicResource Brush.Foreground}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </Window.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="720">
     <StackPanel Margin="16">
         <TextBlock Text="{Binding [Settings_Features], Source={x:Static loc:LocalizationManager.Instance}}"
                    FontWeight="SemiBold" Margin="0,0,0,8" />
@@ -82,6 +86,50 @@
                    TextWrapping="Wrap" FontSize="11" Margin="0,4,0,0"
                    Foreground="{DynamicResource Brush.SubtleForeground}" />
 
+        <TextBlock Text="{Binding [Settings_LearnedWords], Source={x:Static loc:LocalizationManager.Instance}}"
+                   FontWeight="SemiBold" Margin="0,18,0,4" />
+        <TextBlock Text="{Binding [Settings_LearnedWordsHint], Source={x:Static loc:LocalizationManager.Instance}}"
+                   TextWrapping="Wrap" FontSize="11" Margin="0,0,0,6"
+                   Foreground="{DynamicResource Brush.SubtleForeground}" />
+
+        <TextBlock Text="{Binding [Settings_LearnedWordsEmpty], Source={x:Static loc:LocalizationManager.Instance}}"
+                   FontSize="11" Foreground="{DynamicResource Brush.SubtleForeground}"
+                   Visibility="{Binding HasNoLearnedWords, Converter={StaticResource BoolToVisibility}}" />
+
+        <ItemsControl ItemsSource="{Binding LearnedWords}" MaxHeight="140"
+                      Visibility="{Binding HasLearnedWords, Converter={StaticResource BoolToVisibility}}">
+            <ItemsControl.Template>
+                <ControlTemplate TargetType="ItemsControl">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsPresenter />
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ItemsControl.Template>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="36" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding Language}" FontSize="11"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Brush.SubtleForeground}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Word}" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="2" Command="{Binding ForgetCommand}" Padding="10,2"
+                                Style="{StaticResource GhostButton}"
+                                Content="{Binding [Settings_ForgetWord], Source={x:Static loc:LocalizationManager.Instance}}" />
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Button Command="{Binding ForgetAllWordsCommand}" Padding="12,4" HorizontalAlignment="Left" Margin="0,6,0,0"
+                Visibility="{Binding HasLearnedWords, Converter={StaticResource BoolToVisibility}}"
+                Content="{Binding [Settings_ForgetAll], Source={x:Static loc:LocalizationManager.Instance}}" />
+
         <TextBlock Text="{Binding [Settings_Updates], Source={x:Static loc:LocalizationManager.Instance}}"
                    FontWeight="SemiBold" Margin="0,16,0,4" />
         <CheckBox Content="{Binding [Settings_CheckForUpdates], Source={x:Static loc:LocalizationManager.Instance}}"
@@ -112,4 +160,5 @@
                     Padding="16,4" IsCancel="True" Click="OnCloseClick" />
         </StackPanel>
     </StackPanel>
+    </ScrollViewer>
 </Window>

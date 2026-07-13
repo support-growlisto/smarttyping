@@ -30,4 +30,22 @@ public interface ILexicon
     /// given language's vocabulary, so the decider's veto stops correcting it. Persisted.
     /// </summary>
     void Learn(string word, bool isThai);
+
+    /// <summary>
+    /// The words the user has taught us, in the order they were learned. Empty until the dictionaries
+    /// have loaded.
+    /// </summary>
+    IReadOnlyList<LearnedEntry> LearnedWords { get; }
+
+    /// <summary>
+    /// Undoes a <see cref="Learn"/>: the word leaves the vocabulary and the corrector will act on it
+    /// again. Persisted. Unknown words are ignored.
+    /// </summary>
+    void Forget(string word, bool isThai);
+
+    /// <summary>Forgets every learned word. The bundled dictionaries are untouched.</summary>
+    void ForgetAll();
 }
+
+/// <summary>A word the user taught the app by undoing a correction of it.</summary>
+public sealed record LearnedEntry(string Word, bool IsThai);

@@ -35,4 +35,18 @@ public sealed class LearnedWordRepository : ILearnedWordRepository
                 LearnedUtc = SqliteTime.ToStorage(learnedUtc)
             });
     }
+
+    public async Task RemoveAsync(LearnedWord word)
+    {
+        using var db = _factory.CreateOpenConnection();
+        await db.ExecuteAsync(
+            "DELETE FROM learned_words WHERE Word = @Word AND IsThai = @IsThai;",
+            new { word.Word, IsThai = word.IsThai ? 1 : 0 });
+    }
+
+    public async Task ClearAsync()
+    {
+        using var db = _factory.CreateOpenConnection();
+        await db.ExecuteAsync("DELETE FROM learned_words;");
+    }
 }

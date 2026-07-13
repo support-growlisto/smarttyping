@@ -15,4 +15,10 @@ public interface ILearnedWordRepository
 
     /// <summary>Idempotent: re-learning a known word is a no-op.</summary>
     Task AddAsync(LearnedWord word, DateTime learnedUtc);
+
+    /// <summary>Forgets one word. Idempotent.</summary>
+    Task RemoveAsync(LearnedWord word);
+
+    /// <summary>Forgets every learned word.</summary>
+    Task ClearAsync();
 }

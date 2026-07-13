@@ -118,6 +118,58 @@ public sealed class EmbeddedLexicon : ILexicon
         });
     }
 
+    public IReadOnlyList<LearnedEntry> LearnedWords =>
+        _learnedThai.Keys.Select(w => new LearnedEntry(w, true))
+            .Concat(_learnedEnglish.Keys.Select(w => new LearnedEntry(w, false)))
+            .OrderBy(e => e.Word, StringComparer.CurrentCulture)
+            .ToList();
+
+    public void Forget(string word, bool isThai)
+    {
+        if (string.IsNullOrWhiteSpace(word))
+        {
+            return;
+        }
+
+        var target = isThai ? _learnedThai : _learnedEnglish;
+        if (!target.TryRemove(word, out _))
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _learned.RemoveAsync(new LearnedWord(word, isThai));
+                _logger.LogInformation("Forgot {Language} word {Word}.", isThai ? "Thai" : "English", word);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to forget the learned word {Word}.", word);
+            }
+        });
+    }
+
+    public void ForgetAll()
+    {
+        _learnedThai.Clear();
+        _learnedEnglish.Clear();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _learned.ClearAsync();
+                _logger.LogInformation("Forgot every learned word.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to clear the learned words.");
+            }
+        });
+    }
+
     private async Task LoadAsync()
     {
         try

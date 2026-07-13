@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using SmartTyping.Application.Abstractions;
+using SmartTyping.Application.Language;
 using SmartTyping.Application.Settings;
 using SmartTyping.Domain.Enums;
 using SmartTyping.Domain.ValueObjects;
@@ -16,6 +17,30 @@ public sealed record LanguageOption(string Code, string DisplayName);
 
 /// <summary>A selectable UI theme (system/light/dark).</summary>
 public sealed record ThemeOption(string Code, string DisplayName);
+
+/// <summary>
+/// A word the user taught the app by undoing a correction of it, shown in Settings so that teaching can
+/// be seen and taken back. Without this the learning is invisible: the word simply stops being corrected,
+/// everywhere, and nothing says why.
+/// </summary>
+public sealed class LearnedWordRowViewModel
+{
+    public LearnedWordRowViewModel(string word, bool isThai, ICommand forgetCommand)
+    {
+        Word = word;
+        IsThai = isThai;
+        ForgetCommand = forgetCommand;
+    }
+
+    public string Word { get; }
+
+    public bool IsThai { get; }
+
+    /// <summary>What the word is remembered as — the language whose corrections it now blocks.</summary>
+    public string Language => IsThai ? "ไทย" : "EN";
+
+    public ICommand ForgetCommand { get; }
+}
 
 /// <summary>A rebindable hotkey row shown in Settings.</summary>
 public sealed class HotkeyRowViewModel : ObservableObject
@@ -44,6 +69,7 @@ public sealed class HotkeyRowViewModel : ObservableObject
 public sealed class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _settings;
+    private readonly ILexicon _lexicon;
     private readonly IStartupService _startup;
     private readonly IKeyboardHook _hook;
     private readonly IUpdateService _updates;
@@ -66,8 +92,9 @@ public sealed class SettingsViewModel : ObservableObject
     private LanguageOption _selectedLanguage;
     private ThemeOption _selectedTheme;
 
-    public SettingsViewModel(SettingsService settings, IStartupService startup, IKeyboardHook hook, IUpdateService updates, IDialogService dialogs, TrayIconService tray)
+    public SettingsViewModel(SettingsService settings, IStartupService startup, IKeyboardHook hook, IUpdateService updates, IDialogService dialogs, TrayIconService tray, ILexicon lexicon)
     {
+        _lexicon = lexicon;
         _settings = settings;
         _startup = startup;
         _hook = hook;
@@ -76,6 +103,7 @@ public sealed class SettingsViewModel : ObservableObject
         _tray = tray;
         _selectedLanguage = Languages[0];
         CheckForUpdatesCommand = new AsyncRelayCommand(CheckForUpdatesNowAsync);
+        ForgetAllWordsCommand = new RelayCommand(ForgetAllWords);
 
         var loc = LocalizationManager.Instance;
         Themes = new[]
@@ -347,6 +375,46 @@ public sealed class SettingsViewModel : ObservableObject
 
     public ICommand CheckForUpdatesCommand { get; }
 
+    public ICommand ForgetAllWordsCommand { get; }
+
+    /// <summary>The learned words, refreshed each time Settings is loaded.</summary>
+    public ObservableCollection<LearnedWordRowViewModel> LearnedWords { get; } = new();
+
+    public bool HasLearnedWords => LearnedWords.Count > 0;
+
+    public bool HasNoLearnedWords => LearnedWords.Count == 0;
+
+    private void ReloadLearnedWords()
+    {
+        LearnedWords.Clear();
+        foreach (var entry in _lexicon.LearnedWords)
+        {
+            LearnedWords.Add(new LearnedWordRowViewModel(entry.Word, entry.IsThai,
+                new RelayCommand(() => ForgetWord(entry.Word, entry.IsThai))));
+        }
+
+        OnPropertyChanged(nameof(HasLearnedWords));
+        OnPropertyChanged(nameof(HasNoLearnedWords));
+    }
+
+    private void ForgetWord(string word, bool isThai)
+    {
+        _lexicon.Forget(word, isThai);
+        ReloadLearnedWords();
+    }
+
+    private void ForgetAllWords()
+    {
+        var loc = LocalizationManager.Instance;
+        if (!_dialogs.Confirm(loc["Settings_ForgetAllConfirm"], loc["Settings_LearnedWords"]))
+        {
+            return;
+        }
+
+        _lexicon.ForgetAll();
+        ReloadLearnedWords();
+    }
+
     private async Task CheckForUpdatesNowAsync()
     {
         var loc = LocalizationManager.Instance;
@@ -378,6 +446,8 @@ public sealed class SettingsViewModel : ObservableObject
             NotificationsEnabled = await _settings.IsNotificationsEnabledAsync();
             BlockedApps = (await _settings.GetBlockedAppsAsync()).ToString();
             AiApiKey = await _settings.GetAiApiKeyAsync();
+            ReloadLearnedWords();
+
             // The registry is the source of truth for auto-start.
             StartWithWindows = _startup.IsEnabled();
             CheckForUpdates = await _settings.IsUpdateCheckEnabledAsync();
