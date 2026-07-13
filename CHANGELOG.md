@@ -79,6 +79,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+## [0.6.2]
+
+### Changed: starting with Windows no longer opens a window
+
+The app registered itself to launch at sign-in, then opened its main window — every single time. It now
+lives in the tray from the start, like RightLang: the hooks, the corrector and the expander are all
+running, there is simply no window in your face while you get on with what you actually signed in to do.
+
+The Run entry now carries a `--background` flag, and the app honours it. An entry written by an older
+version has no flag, so it would keep popping the window open forever — the app therefore rewrites a
+stale entry at launch (which also repairs the path after an upgrade moves the executable).
+
+Launching it yourself — from the Start menu, the desktop shortcut, or the installer's "run now" — opens
+the window as before. Only the sign-in launch is silent.
+
 ## [0.6.1]
 
 ### Fixed: `้ำ` left behind when correcting a word typed on the Thai layout

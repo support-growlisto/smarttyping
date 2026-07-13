@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -189,9 +190,29 @@ public partial class App : System.Windows.Application
         // Surface the window when a second launch signals us.
         _singleInstance.StartListening(() => Dispatcher.Invoke(ShowMainWindow));
 
-        mainWindow.Show();
+        // Launched by Windows at sign-in: live in the tray, silently. Everything above is already
+        // running — the hooks, the corrector, the expander — so there is nothing a window would add
+        // except getting in the way of whatever the user actually signed in to do.
+        var background = e.Args.Any(a =>
+            string.Equals(a, IStartupService.BackgroundFlag, StringComparison.OrdinalIgnoreCase));
 
-        _ = ShowOnboardingIfFirstRunAsync();
+        if (!background)
+        {
+            mainWindow.Show();
+            _ = ShowOnboardingIfFirstRunAsync();
+        }
+
+        // An entry written by an older version launches without the flag, so it would keep opening a
+        // window at every sign-in until the user toggles the setting. Repair it in place.
+        try
+        {
+            _services.GetRequiredService<IStartupService>().RefreshIfEnabled();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug(ex, "Could not refresh the start-with-Windows entry.");
+        }
+
         _ = CheckForUpdatesOnStartupAsync();
     }
 

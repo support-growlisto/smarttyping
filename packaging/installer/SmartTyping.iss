@@ -6,7 +6,7 @@
 
 #define AppName "SmartTyping"
 #ifndef AppVersion
-  #define AppVersion "0.6.1"
+  #define AppVersion "0.6.2"
 #endif
 #define AppPublisher "SmartTyping"
 #define AppExe "SmartTyping.exe"

@@ -41,12 +41,47 @@ public sealed class WindowsStartupService : IStartupService
                 return;
             }
 
+            // The flag makes the sign-in launch go straight to the tray instead of opening a window.
             using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
-            key?.SetValue(ValueName, $"\"{exePath}\"");
+            key?.SetValue(ValueName, $"\"{exePath}\" {IStartupService.BackgroundFlag}");
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to enable start-with-Windows.");
+        }
+    }
+
+    /// <summary>
+    /// Rewrites the Run entry if it exists but is out of date — an old install wrote the bare path with
+    /// no <see cref="IStartupService.BackgroundFlag"/> (so it popped a window at every sign-in), and an
+    /// upgrade can move the executable. Does nothing when start-with-Windows is off.
+    /// </summary>
+    public void RefreshIfEnabled()
+    {
+        try
+        {
+            var exePath = global::System.Environment.ProcessPath;
+            if (string.IsNullOrEmpty(exePath))
+            {
+                return;
+            }
+
+            using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
+            if (key?.GetValue(ValueName) is not string current)
+            {
+                return;
+            }
+
+            var expected = $"\"{exePath}\" {IStartupService.BackgroundFlag}";
+            if (!string.Equals(current, expected, StringComparison.OrdinalIgnoreCase))
+            {
+                key.SetValue(ValueName, expected);
+                _logger.LogInformation("Updated the start-with-Windows entry to launch in the background.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to refresh the start-with-Windows entry.");
         }
     }
 
