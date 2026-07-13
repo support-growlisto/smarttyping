@@ -66,6 +66,16 @@ public sealed class SettingsService
     public Task SetAutoExpandEnabledAsync(bool enabled) =>
         SetBoolAsync(SettingKeys.AutoExpandSnippets, enabled);
 
+    /// <summary>
+    /// The personal dictionary — learning the words you type that no dictionary knows. <b>Off by
+    /// default</b>: it is the only feature that writes what you type to disk, so it waits to be asked.
+    /// </summary>
+    public Task<bool> IsPersonalDictionaryEnabledAsync() =>
+        GetBoolAsync(SettingKeys.PersonalDictionary, defaultValue: false);
+
+    public Task SetPersonalDictionaryEnabledAsync(bool enabled) =>
+        SetBoolAsync(SettingKeys.PersonalDictionary, enabled);
+
     /// <summary>Tray balloon notifications (converted / expanded / AI). On by default.</summary>
     public Task<bool> IsNotificationsEnabledAsync() =>
         GetBoolAsync(SettingKeys.ShowNotifications, defaultValue: true);

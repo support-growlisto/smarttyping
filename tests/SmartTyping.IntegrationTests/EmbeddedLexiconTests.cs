@@ -41,10 +41,12 @@ public sealed class EmbeddedLexiconTests
         }
     }
 
-    private static EmbeddedLexicon LoadedLexicon(ILearnedWordRepository? learned = null)
+    private static EmbeddedLexicon LoadedLexicon(
+        ILearnedWordRepository? learned = null, IPersonalWordRepository? personal = null)
     {
         var lexicon = new EmbeddedLexicon(
             learned ?? new FakeLearnedWords(),
+            personal ?? new InMemoryPersonalWords(),
             new KeyboardLayoutConverter(),
             NullLogger<EmbeddedLexicon>.Instance);
 

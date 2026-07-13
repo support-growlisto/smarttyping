@@ -33,7 +33,7 @@ public sealed class FuzzyLayoutDeciderTests
     public FuzzyLayoutDeciderTests(ITestOutputHelper output)
     {
         _output = output;
-        _lexicon = new EmbeddedLexicon(new NoLearnedWords(), new KeyboardLayoutConverter(), NullLogger<EmbeddedLexicon>.Instance);
+        _lexicon = new EmbeddedLexicon(new NoLearnedWords(), new InMemoryPersonalWords(), new KeyboardLayoutConverter(), NullLogger<EmbeddedLexicon>.Instance);
 
         var clock = Stopwatch.StartNew();
         while (!_lexicon.IsReady && clock.Elapsed < TimeSpan.FromSeconds(30))

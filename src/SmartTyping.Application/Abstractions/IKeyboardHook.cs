@@ -46,6 +46,23 @@ public interface IKeyboardHook : IDisposable
     /// </summary>
     event EventHandler? UndoCorrectionRequested;
 
+    /// <summary>
+    /// Raised for every ordinary word the user finishes, with the text as it appears on screen and the
+    /// language of the layout it was typed on. It exists for the personal dictionary, which needs to
+    /// count the words no dictionary knows.
+    ///
+    /// <para>This carries what the user typed, so the handler is where the rules live: nothing is
+    /// counted from a blocked app or a password field, and nothing is written to disk unless
+    /// <see cref="PersonalDictionaryEnabled"/> is on. The hook raises it and forgets it.</para>
+    /// </summary>
+    event EventHandler<Language.WordObserved>? WordObserved;
+
+    /// <summary>
+    /// Whether to raise <see cref="WordObserved"/> at all. Off by default: this is the only feature that
+    /// writes what you type to disk, so nothing happens until you ask for it.
+    /// </summary>
+    bool PersonalDictionaryEnabled { get; set; }
+
     /// <summary>Enables/disables the non-destructive as-you-type layout suggestions.</summary>
     bool SuggestionsEnabled { get; set; }
 

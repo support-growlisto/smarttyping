@@ -18,6 +18,30 @@ public sealed record LanguageOption(string Code, string DisplayName);
 /// <summary>A selectable UI theme (system/light/dark).</summary>
 public sealed record ThemeOption(string Code, string DisplayName);
 
+/// <summary>A word in the personal dictionary, with how many times it has been typed.</summary>
+public sealed class PersonalWordRowViewModel
+{
+    public PersonalWordRowViewModel(string word, bool isThai, int count, ICommand forgetCommand)
+    {
+        Word = word;
+        IsThai = isThai;
+        Count = count;
+        ForgetCommand = forgetCommand;
+    }
+
+    public string Word { get; }
+
+    public bool IsThai { get; }
+
+    public int Count { get; }
+
+    public string Language => IsThai ? "ไทย" : "EN";
+
+    public string Times => LocalizationManager.Instance.Format("Settings_PersonalCount", Count);
+
+    public ICommand ForgetCommand { get; }
+}
+
 /// <summary>
 /// A word the user taught the app by undoing a correction of it, shown in Settings so that teaching can
 /// be seen and taken back. Without this the learning is invisible: the word simply stops being corrected,
@@ -70,6 +94,7 @@ public sealed class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _settings;
     private readonly ILexicon _lexicon;
+    private readonly IPersonalWordRepository _personalWords;
     private readonly IStartupService _startup;
     private readonly IKeyboardHook _hook;
     private readonly IUpdateService _updates;
@@ -77,6 +102,7 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly TrayIconService _tray;
     private readonly Dictionary<HotkeyAction, Hotkey> _hotkeys = new(SettingsService.DefaultHotkeys);
     private bool _loading;
+    private bool _personalDictionaryEnabled;
 
     private bool _snippetExpansionEnabled = true;
     private bool _languageCorrectionEnabled = true;
@@ -92,9 +118,10 @@ public sealed class SettingsViewModel : ObservableObject
     private LanguageOption _selectedLanguage;
     private ThemeOption _selectedTheme;
 
-    public SettingsViewModel(SettingsService settings, IStartupService startup, IKeyboardHook hook, IUpdateService updates, IDialogService dialogs, TrayIconService tray, ILexicon lexicon)
+    public SettingsViewModel(SettingsService settings, IStartupService startup, IKeyboardHook hook, IUpdateService updates, IDialogService dialogs, TrayIconService tray, ILexicon lexicon, IPersonalWordRepository personalWords)
     {
         _lexicon = lexicon;
+        _personalWords = personalWords;
         _settings = settings;
         _startup = startup;
         _hook = hook;
@@ -104,6 +131,7 @@ public sealed class SettingsViewModel : ObservableObject
         _selectedLanguage = Languages[0];
         CheckForUpdatesCommand = new AsyncRelayCommand(CheckForUpdatesNowAsync);
         ForgetAllWordsCommand = new RelayCommand(ForgetAllWords);
+        ForgetAllPersonalCommand = new RelayCommand(ForgetAllPersonal);
 
         var loc = LocalizationManager.Instance;
         Themes = new[]
@@ -377,6 +405,80 @@ public sealed class SettingsViewModel : ObservableObject
 
     public ICommand ForgetAllWordsCommand { get; }
 
+    public ICommand ForgetAllPersonalCommand { get; }
+
+    /// <summary>
+    /// The personal dictionary — the words you type that no dictionary knows. Off by default: it is the
+    /// only feature that writes what you type to disk.
+    /// </summary>
+    public bool PersonalDictionaryEnabled
+    {
+        get => _personalDictionaryEnabled;
+        set
+        {
+            if (!SetProperty(ref _personalDictionaryEnabled, value))
+            {
+                return;
+            }
+
+            _hook.PersonalDictionaryEnabled = value;
+            if (!_loading)
+            {
+                _ = _settings.SetPersonalDictionaryEnabledAsync(value);
+            }
+        }
+    }
+
+    /// <summary>Words already adopted, plus the ones still being counted towards the threshold.</summary>
+    public ObservableCollection<PersonalWordRowViewModel> PersonalWords { get; } = new();
+
+    public bool HasPersonalWords => PersonalWords.Count > 0;
+
+    public bool HasNoPersonalWords => PersonalWords.Count == 0;
+
+    private async Task ReloadPersonalWordsAsync()
+    {
+        try
+        {
+            var words = await _personalWords.GetAllAsync();
+            PersonalWords.Clear();
+            foreach (var word in words)
+            {
+                PersonalWords.Add(new PersonalWordRowViewModel(word.Word, word.IsThai, word.Count,
+                    new RelayCommand(() => ForgetPersonal(word.Word, word.IsThai))));
+            }
+
+            OnPropertyChanged(nameof(HasPersonalWords));
+            OnPropertyChanged(nameof(HasNoPersonalWords));
+        }
+        catch
+        {
+            // The list is informational; a failure to read it must not break Settings.
+        }
+    }
+
+    private void ForgetPersonal(string word, bool isThai)
+    {
+        _lexicon.RemovePersonal(word, isThai);
+        _ = ReloadPersonalWordsAsync();
+    }
+
+    private void ForgetAllPersonal()
+    {
+        var loc = LocalizationManager.Instance;
+        if (!_dialogs.Confirm(loc["Settings_ForgetAllConfirm"], loc["Settings_PersonalDictionary"]))
+        {
+            return;
+        }
+
+        foreach (var row in PersonalWords.ToList())
+        {
+            _lexicon.RemovePersonal(row.Word, row.IsThai);
+        }
+
+        _ = ReloadPersonalWordsAsync();
+    }
+
     /// <summary>The learned words, refreshed each time Settings is loaded.</summary>
     public ObservableCollection<LearnedWordRowViewModel> LearnedWords { get; } = new();
 
@@ -447,6 +549,8 @@ public sealed class SettingsViewModel : ObservableObject
             BlockedApps = (await _settings.GetBlockedAppsAsync()).ToString();
             AiApiKey = await _settings.GetAiApiKeyAsync();
             ReloadLearnedWords();
+            PersonalDictionaryEnabled = await _settings.IsPersonalDictionaryEnabledAsync();
+            await ReloadPersonalWordsAsync();
 
             // The registry is the source of truth for auto-start.
             StartWithWindows = _startup.IsEnabled();

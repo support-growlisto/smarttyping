@@ -23,12 +23,18 @@ public sealed class EmbeddedLexicon : ILexicon
     private const string EnglishResource = "SmartTyping.Infrastructure.words_en.txt.gz";
 
     private readonly ILearnedWordRepository _learned;
+    private readonly IPersonalWordRepository _personal;
     private readonly IKeyboardLayoutConverter _converter;
     private readonly ILogger<EmbeddedLexicon> _logger;
 
     // Learned words are consulted on the hook thread while the undo handler adds to them.
     private readonly ConcurrentDictionary<string, byte> _learnedThai = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, byte> _learnedEnglish = new(StringComparer.OrdinalIgnoreCase);
+
+    // The personal dictionary: words typed often enough to count as the user's own. Small (tens to
+    // hundreds), so the fuzzy lookup can scan them linearly instead of maintaining another index.
+    private readonly ConcurrentDictionary<string, byte> _personalThai = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, byte> _personalEnglish = new(StringComparer.OrdinalIgnoreCase);
 
     private HashSet<string>? _thai;
     private HashSet<string>? _english;
@@ -43,9 +49,11 @@ public sealed class EmbeddedLexicon : ILexicon
 
     public EmbeddedLexicon(
         ILearnedWordRepository learned,
+        IPersonalWordRepository personal,
         IKeyboardLayoutConverter converter,
         ILogger<EmbeddedLexicon> logger)
     {
+        _personal = personal;
         _learned = learned;
         _converter = converter;
         _logger = logger;
@@ -55,16 +63,45 @@ public sealed class EmbeddedLexicon : ILexicon
     public bool IsReady => _ready;
 
     public bool IsThaiWord(string word) =>
-        _ready && (_thai!.Contains(word) || _learnedThai.ContainsKey(word));
+        _ready && (_thai!.Contains(word) || _learnedThai.ContainsKey(word) || _personalThai.ContainsKey(word));
 
     public bool IsEnglishWord(string word) =>
-        _ready && (_english!.Contains(word) || _learnedEnglish.ContainsKey(word));
+        _ready && (_english!.Contains(word) || _learnedEnglish.ContainsKey(word) || _personalEnglish.ContainsKey(word));
 
     public bool IsNearThaiWord(string latinTyped, int budget) =>
-        _ready && HasNeighbour(_thaiAsLatinByLength!, latinTyped, budget, StringComparison.Ordinal);
+        _ready && (HasNeighbour(_thaiAsLatinByLength!, latinTyped, budget, StringComparison.Ordinal)
+                   || HasPersonalNeighbour(_personalThai, latinTyped, budget, thai: true));
 
     public bool IsNearEnglishWord(string typed, int budget) =>
-        _ready && HasNeighbour(_englishByLength!, typed, budget, StringComparison.OrdinalIgnoreCase);
+        _ready && (HasNeighbour(_englishByLength!, typed, budget, StringComparison.OrdinalIgnoreCase)
+                   || HasPersonalNeighbour(_personalEnglish, typed, budget, thai: false));
+
+    // The personal dictionary is small enough to scan. Thai entries are stored as Thai, but the typo
+    // happened on a physical key, so they are compared as the latin that types them — same as the
+    // bundled index.
+    private bool HasPersonalNeighbour(ConcurrentDictionary<string, byte> words, string typed, int budget, bool thai)
+    {
+        if (budget < 0 || typed.Length == 0 || words.IsEmpty)
+        {
+            return false;
+        }
+
+        foreach (var word in words.Keys)
+        {
+            var candidate = thai ? _converter.Convert(word, ConversionDirection.ThaiToEnglish) : word;
+            if (candidate.Length != typed.Length)
+            {
+                continue;
+            }
+
+            if (KeyboardCost.Distance(typed, candidate, budget) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static bool HasNeighbour(
         IReadOnlyDictionary<int, string[]> byLength, string typed, int budget, StringComparison comparison)
@@ -170,6 +207,39 @@ public sealed class EmbeddedLexicon : ILexicon
         });
     }
 
+    public void AddPersonal(string word, bool isThai)
+    {
+        if (string.IsNullOrWhiteSpace(word))
+        {
+            return;
+        }
+
+        // Only the in-memory vocabulary: the tally on disk is the coordinator's, and it is already there.
+        (isThai ? _personalThai : _personalEnglish).TryAdd(word, 0);
+    }
+
+    public void RemovePersonal(string word, bool isThai)
+    {
+        if (string.IsNullOrWhiteSpace(word))
+        {
+            return;
+        }
+
+        (isThai ? _personalThai : _personalEnglish).TryRemove(word, out _);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _personal.RemoveAsync(word, isThai);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to remove the personal word {Word}.", word);
+            }
+        });
+    }
+
     private async Task LoadAsync()
     {
         try
@@ -182,6 +252,15 @@ public sealed class EmbeddedLexicon : ILexicon
                 (word.IsThai ? _learnedThai : _learnedEnglish).TryAdd(word.Word, 0);
             }
 
+            // Only words that reached the threshold are vocabulary; the rest are still just a tally.
+            foreach (var word in await _personal.GetAllAsync())
+            {
+                if (word.Count >= PersonalDictionary.Threshold)
+                {
+                    (word.IsThai ? _personalThai : _personalEnglish).TryAdd(word.Word, 0);
+                }
+            }
+
             // Index for the fuzzy lookup. Thai words are keyed by the latin characters that type them.
             _thaiAsLatinByLength = BucketByLength(
                 thai.Select(word => _converter.Convert(word, ConversionDirection.ThaiToEnglish)));
@@ -192,8 +271,9 @@ public sealed class EmbeddedLexicon : ILexicon
             _ready = true;
 
             _logger.LogInformation(
-                "Lexicon loaded: {Thai} Thai words, {English} English words, {Learned} learned.",
-                thai.Count, english.Count, _learnedThai.Count + _learnedEnglish.Count);
+                "Lexicon loaded: {Thai} Thai words, {English} English words, {Learned} learned, {Personal} personal.",
+                thai.Count, english.Count, _learnedThai.Count + _learnedEnglish.Count,
+                _personalThai.Count + _personalEnglish.Count);
         }
         catch (Exception ex)
         {

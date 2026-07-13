@@ -31,6 +31,7 @@ public partial class App : System.Windows.Application
     private CaptureSnippetCoordinator? _capture;
     private AiImproveCoordinator? _aiImprove;
     private AutoExpandCoordinator? _autoExpand;
+    private PersonalDictionaryCoordinator? _personalDictionary;
 
     // Throttle the as-you-type suggestion balloon so it can't spam the tray.
     private int _lastSuggestionTick;
@@ -79,6 +80,7 @@ public partial class App : System.Windows.Application
         services.AddSingleton<CaptureSnippetCoordinator>();
         services.AddSingleton<AiImproveCoordinator>();
         services.AddSingleton<AutoExpandCoordinator>();
+        services.AddSingleton<PersonalDictionaryCoordinator>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
@@ -116,6 +118,7 @@ public partial class App : System.Windows.Application
             hook.SuggestionsEnabled = settings.IsAutoCorrectSuggestEnabledAsync().GetAwaiter().GetResult();
             hook.AutoApplySuggestions = settings.IsAutoCorrectAutoApplyEnabledAsync().GetAwaiter().GetResult();
             hook.AutoExpandEnabled = settings.IsAutoExpandEnabledAsync().GetAwaiter().GetResult();
+            hook.PersonalDictionaryEnabled = settings.IsPersonalDictionaryEnabledAsync().GetAwaiter().GetResult();
             hook.Blocklist = settings.GetBlockedAppsAsync().GetAwaiter().GetResult();
 
             // Correcting mid-word only makes sense if we can then switch the user to Thai; otherwise
@@ -174,6 +177,11 @@ public partial class App : System.Windows.Application
             Dispatcher.Invoke(() => _tray?.ShowBalloon(Localization.LocalizationManager.Instance["Tray_AiNotConfigured_Title"],
                 Localization.LocalizationManager.Instance["Tray_AiNotConfigured"]));
         _aiImprove.Start();
+
+        // The personal dictionary (opt-in, off by default): learns the words no dictionary knows from
+        // what the user actually types.
+        _personalDictionary = _services.GetRequiredService<PersonalDictionaryCoordinator>();
+        _personalDictionary.Start();
 
         // Automatic snippet expansion as you type (opt-in).
         _autoExpand = _services.GetRequiredService<AutoExpandCoordinator>();
@@ -301,6 +309,7 @@ public partial class App : System.Windows.Application
         _capture?.Stop();
         _aiImprove?.Stop();
         _autoExpand?.Stop();
+        _personalDictionary?.Stop();
         _tray?.Dispose();
         Shutdown(0);
     }
@@ -313,6 +322,7 @@ public partial class App : System.Windows.Application
         _capture?.Dispose();
         _aiImprove?.Dispose();
         _autoExpand?.Dispose();
+        _personalDictionary?.Dispose();
         _tray?.Dispose();
         _singleInstance?.Dispose();
         _services?.Dispose();

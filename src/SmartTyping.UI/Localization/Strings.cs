@@ -78,6 +78,13 @@ internal static class Strings
                 "Tray pop-ups after a conversion, expansion or AI edit. Turn off to work silently — the features still run.",
                 "ข้อความเด้งมุมจอหลังแปลงภาษา ขยาย snippet หรือ AI · ปิดได้เพื่อให้เงียบ ฟีเจอร์ยังทำงานปกติ"),
             ["Settings_BlockedApps"] = ("Never type in these apps:", "ห้ามพิมพ์แทนในแอปเหล่านี้:"),
+            ["Settings_PersonalDictionary"] = ("Personal dictionary", "พจนานุกรมส่วนตัว"),
+            ["Settings_PersonalDictionaryEnabled"] = ("Learn the words I type that no dictionary knows", "เรียนรู้คำที่ผมพิมพ์ซึ่งไม่มีในพจนานุกรม"),
+            ["Settings_PersonalDictionaryHint"] = (
+                "Names, jargon, the deliberate misspellings you use with certain people. A word joins after you type it 3 times, and can then be fixed when you type it on the wrong layout. This is the only feature that writes what you type to disk — never from a password field or a blocked app, never anything with digits or symbols, never a word a dictionary already knows. Words counted once or twice are deleted after 30 days.",
+                "ชื่อคน ศัพท์เฉพาะทาง คำที่คุณตั้งใจพิมพ์ผิดกับบางคน · คำจะถูกรับเข้าหลังพิมพ์ครบ 3 ครั้ง แล้วระบบจะแก้ให้ได้เวลาพิมพ์ผิดเลย์เอาต์ · นี่เป็นฟีเจอร์เดียวที่เขียนคำที่คุณพิมพ์ลงดิสก์ — ไม่เก็บจากช่องรหัสผ่านหรือแอปที่ห้ามไว้ ไม่เก็บคำที่มีตัวเลข/สัญลักษณ์ ไม่เก็บคำที่มีในพจนานุกรมอยู่แล้ว · คำที่พิมพ์ไม่ถึง 3 ครั้งจะถูกลบทิ้งใน 30 วัน"),
+            ["Settings_PersonalDictionaryEmpty"] = ("No personal words yet.", "ยังไม่มีคำส่วนตัว"),
+            ["Settings_PersonalCount"] = ("{0}x", "{0} ครั้ง"),
             ["Settings_LearnedWords"] = ("Words you taught me", "คำที่โปรแกรมจำไว้"),
             ["Settings_LearnedWordsHint"] = (
                 "Undoing a correction teaches me that the word was right, and I stop correcting it — everywhere, for good. Remove a word here to start correcting it again.",

@@ -117,6 +117,10 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
     public event EventHandler? UndoCorrectionRequested;
 
+    public event EventHandler<WordObserved>? WordObserved;
+
+    public bool PersonalDictionaryEnabled { get; set; }
+
     public bool SuggestionsEnabled { get; set; }
 
     public bool AutoApplySuggestions { get; set; }
@@ -333,7 +337,7 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
                 // Track plain typing for as-you-type features (layout hint / auto-expand). Only when a
                 // feature is on and no command modifier is held.
-                if ((SuggestionsEnabled || AutoExpandEnabled) && !matched &&
+                if ((SuggestionsEnabled || AutoExpandEnabled || PersonalDictionaryEnabled) && !matched &&
                     (mods & (HotkeyModifiers.Ctrl | HotkeyModifiers.Alt | HotkeyModifiers.Win)) == 0)
                 {
                     // If focus moved to another window (e.g. Alt+Tab), the tracked word is stale and a
@@ -392,6 +396,8 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
 
                 // At most one of the two may fire: both would replace the same text. An expansion wins,
                 // because the user typed a trigger deliberately.
+                RaiseWordObserved(completed);
+
                 var swallow = RaiseSnippetWordCompleted(completed, vk) ||
                               EvaluateWord(completed, atSpace: vk == NativeMethods.VK_SPACE);
 
@@ -682,6 +688,33 @@ public sealed class WindowsKeyboardHook : IKeyboardHook
         var payload = new WordBoundary(word, boundary, _onScreen.Length, boundary);
         ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
         return true;
+    }
+
+    // Report the finished word for the personal dictionary — as it stands on screen, in the language of
+    // the layout it was typed on. The hook applies no policy: what may be counted, and whether anything
+    // is written at all, is decided by the handler, off this thread.
+    private void RaiseWordObserved(string word)
+    {
+        if (!PersonalDictionaryEnabled || word.Length == 0)
+        {
+            return;
+        }
+
+        var handler = WordObserved;
+        if (handler is null)
+        {
+            return;
+        }
+
+        var thaiLayout = NativeMethods.ForegroundLayoutIsThai();
+        var onScreen = thaiLayout ? _onScreen.ToString() : word;
+        if (onScreen.Length == 0)
+        {
+            return;
+        }
+
+        var payload = new WordObserved(onScreen, thaiLayout);
+        ThreadPool.QueueUserWorkItem(_ => handler.Invoke(this, payload));
     }
 
     // Returns true when the delimiter must be swallowed because an automatic correction was raised.

@@ -53,6 +53,20 @@ public sealed class DatabaseInitializer
             LearnedUtc TEXT    NOT NULL,
             PRIMARY KEY (Word, IsThai)
         );
+
+        -- The personal dictionary: words the user types that no dictionary knows — names, jargon, the
+        -- deliberate misspellings people use with each other. A word joins the vocabulary once it has
+        -- been typed PersonalDictionary.Threshold times; until then this table is only a tally, and one
+        -- that is pruned after PersonalDictionary.CandidateLifetimeDays so a word typed once and never
+        -- again does not linger on disk.
+        CREATE TABLE IF NOT EXISTS personal_words (
+            Word         TEXT    NOT NULL,
+            IsThai       INTEGER NOT NULL,
+            Count        INTEGER NOT NULL,
+            FirstSeenUtc TEXT    NOT NULL,
+            LastSeenUtc  TEXT    NOT NULL,
+            PRIMARY KEY (Word, IsThai)
+        );
         """;
 
     private readonly ISqlConnectionFactory _factory;

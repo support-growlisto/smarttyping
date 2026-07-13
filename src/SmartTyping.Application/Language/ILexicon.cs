@@ -45,6 +45,16 @@ public interface ILexicon
 
     /// <summary>Forgets every learned word. The bundled dictionaries are untouched.</summary>
     void ForgetAll();
+
+    /// <summary>
+    /// Adds a word to the personal vocabulary — one the user has typed often enough that it is plainly
+    /// theirs (a name, a piece of jargon, a deliberate misspelling). Unlike <see cref="Learn"/> this
+    /// makes the word <i>correctable</i>: typing it on the wrong layout can now be fixed to it.
+    /// </summary>
+    void AddPersonal(string word, bool isThai);
+
+    /// <summary>Removes a word from the personal vocabulary. The tally on disk goes with it.</summary>
+    void RemovePersonal(string word, bool isThai);
 }
 
 /// <summary>A word the user taught the app by undoing a correction of it.</summary>

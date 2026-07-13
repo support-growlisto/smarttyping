@@ -39,6 +39,11 @@ public sealed class LayoutDeciderTests
             _english.Clear();
         }
 
+        // The fake keeps one vocabulary per language, so a personal word is simply a word.
+        public void AddPersonal(string word, bool isThai) => (isThai ? _thai : _english).Add(word);
+
+        public void RemovePersonal(string word, bool isThai) => (isThai ? _thai : _english).Remove(word);
+
         // Mirrors EmbeddedLexicon: Thai words are compared as the latin keys that type them.
         public bool IsNearThaiWord(string latinTyped, int budget) => _thai.Any(word =>
             KeyboardCost.Distance(latinTyped, Converter.Convert(word, ConversionDirection.ThaiToEnglish), budget) >= 0);

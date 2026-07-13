@@ -26,5 +26,6 @@ public static class SettingKeys
     public const string HotkeyUndoCorrection = "HotkeyUndoCorrection";
     public const string AiProvider = "AiProvider";
     public const string AiApiKey = "AiApiKey";
+    public const string PersonalDictionary = "PersonalDictionary";
     public const string SchemaVersion = "SchemaVersion";
 }

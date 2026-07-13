@@ -79,6 +79,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fixes it automatically** (opt-in sub-option): on the next space the word is replaced in place. Automatic mode uses a **stricter rule that ignores the apostrophe**, so English contractions (`don't`, `it's`, `I'm`) are never touched, and it only fires on a space boundary (never across a line break).
   The detection is a pure, unit-tested heuristic (`WrongLayoutDetector`, with a `strict` mode); the hook only tracks plain typing (no modifier keys) and skips when the active layout is already Thai. Suggestions are throttled to at most one hint every few seconds. Off unless you turn it on.
 
+## [Unreleased]
+
+### Added: the personal dictionary — the words no dictionary knows
+
+Names, jargon, and the deliberate misspellings people use with each other (`คับ`, `จ้าา`). These are the
+words you type most and the ones the app was worst at: with nothing to correct them *to*, typing them on
+the wrong layout could not be fixed at all.
+
+Type a word three times and it joins your vocabulary. From then on, typing it on the wrong layout is
+corrected to it — verified end to end against the running app: an invented word counted 1 → 2 → 3, and
+the same keys on the Thai layout then came back as the word.
+
+**This is the only feature that writes what you type to disk, so it is off until you ask for it**, and
+every gate lives in one place:
+
+- nothing from a password field, or an app on the blocklist (terminals, password managers, remote sessions);
+- nothing containing a digit or a symbol, and nothing over 20 characters — that is what passwords, tokens
+  and URLs look like, and the rules are asserted by tests (`hunter2`, `P@ssw0rd`, `sk-abc123`, `192.168`);
+- nothing a dictionary already knows, so ordinary prose leaves no trace at all;
+- a word counted once or twice and not typed again is deleted after 30 days.
+
+Settings → **พจนานุกรมส่วนตัว** lists every word with how many times you have typed it, and lets you
+remove any of them, or all of them.
+
 ## [0.6.3]
 
 ### Added: the words you taught me are now visible — and removable
